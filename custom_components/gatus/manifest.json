@@ -10,7 +10,7 @@
   "issue_tracker": "https://github.com/ullbergm/homeassistant-gatus/issues",
   "requirements": [
     "aiohttp",
-    "slugify"
+    "python-slugify"
   ],
   "version": "0.2.0"
 }
