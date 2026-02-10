@@ -2,5 +2,36 @@
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "extends": [
     "config:recommended"
+  ],
+  "labels": [
+    "dependencies"
+  ],
+  "packageRules": [
+    {
+      "matchManagers": [
+        "pip_requirements",
+        "pip_setup"
+      ],
+      "addLabels": [
+        "python"
+      ]
+    },
+    {
+      "matchManagers": [
+        "github-actions"
+      ],
+      "addLabels": [
+        "github_actions",
+        "ci"
+      ]
+    },
+    {
+      "matchDepTypes": [
+        "devDependencies"
+      ],
+      "addLabels": [
+        "build"
+      ]
+    }
   ]
 }
