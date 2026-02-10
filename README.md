@@ -4,19 +4,53 @@ A Home Assistant custom integration for [Gatus](https://github.com/TwiN/gatus) -
 
 ## Features
 
-This integration connects to your Gatus instance and creates binary sensors for each monitored endpoint. Each sensor shows whether the endpoint is up (on) or down (off) based on the latest health check results from Gatus.
+This integration connects to your Gatus instance and creates binary sensors for each monitored endpoint using the **Problem** device class. This means:
+- **Off (OK)**: The endpoint is healthy and passing checks
+- **On (Problem)**: The endpoint is failing or unreachable
 
-### What gets created
+### Binary Sensors
 
-- **Binary Sensors**: One sensor for each endpoint monitored by Gatus
-  - **State**: On (up) or Off (down) based on the latest health check
-  - **Attributes**:
-    - Endpoint group
-    - Endpoint name
-    - Hostname
-    - HTTP status code
-    - Response duration (in milliseconds)
-    - Last check timestamp
+One sensor is created for each endpoint monitored by Gatus:
+
+**Device Class**: `problem`
+- **Off**: Service is healthy (check passed)
+- **On**: Service has a problem (check failed)
+
+**Attributes Available**:
+- `endpoint_group`: The group name from Gatus (e.g., "media", "external")
+- `endpoint_name`: The endpoint name from Gatus (e.g., "plex", "google")
+- `hostname`: The hostname being monitored
+- `status_code`: HTTP status code from the health check (e.g., 200, 404)
+- `duration_ms`: Response time in milliseconds
+- `timestamp`: ISO timestamp of the last health check
+
+### Usage in Automations
+
+Since these are **problem** sensors, they work by waiting for the to turn 'on' for alerting:
+
+```yaml
+# Example: Alert when a service has a problem
+alias: ESP Connect down
+description: Alert when ESP Connect service is unreachable
+triggers:
+  - trigger: state
+    entity_id:
+      - >-
+        binary_sensor.home_automation_espconnect
+    to:
+      - "on"
+conditions: []
+actions:
+  - action: notify.notify
+    metadata: {}
+    data:
+      title: ESP Connect is down!
+      message: >-
+        Status code: {{
+        state_attr('binary_sensor.home_automation_espconnect',
+        'status_code') }}
+mode: single
+```
 
 ## Installation
 
@@ -38,10 +72,12 @@ This integration connects to your Gatus instance and creates binary sensors for 
 **Gatus URL**: `https://gatus.apps.openshift.ullberg.family`
 
 This will create binary sensors like:
-- `binary_sensor.adsb_dump978` - ADSB dump978 endpoint
-- `binary_sensor.external_google` - External Google endpoint
-- `binary_sensor.media_plex` - Media Plex endpoint
+- `binary_sensor.adsb_dump978` - Shows "Problem" if ADSB dump978 is down
+- `binary_sensor.external_google` - Shows "Problem" if Google is unreachable
+- `binary_sensor.media_plex` - Shows "Problem" if Plex is down
 - etc.
+
+All sensors will show "OK" when services are healthy and "Problem" when they fail health checks.
 
 ## Update Frequency
 
