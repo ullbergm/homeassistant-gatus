@@ -2,7 +2,10 @@
     "config": {
         "step": {
             "user": {
-                "description": "If you need help with the configuration have a look here: https://github.com/ullbergm/homeassistant-gatus",
+                "description": "If you need help with the configuration have a look at the [documentation]({documentation_url}).",
+                "description_placeholders": {
+                    "documentation_url": "https://github.com/ullbergm/homeassistant-gatus"
+                },
                 "data": {
                     "url": "URL"
                 }
