@@ -59,7 +59,7 @@ class GatusEndpointBinarySensor(GatusEntity, BinarySensorEntity):
         self._endpoint_key = endpoint_key
         self._endpoint_name = endpoint_name
         self._endpoint_group = endpoint_group
-        self._attr_device_class = BinarySensorDeviceClass.RUNNING
+        self._attr_device_class = BinarySensorDeviceClass.PROBLEM
         self._attr_unique_id = f"{coordinator.config_entry.entry_id}_{endpoint_key}"
         # Using has_entity_name=True, so just the endpoint identification
         self._attr_name = f"{endpoint_group} {endpoint_name}"
@@ -111,18 +111,18 @@ class GatusEndpointBinarySensor(GatusEntity, BinarySensorEntity):
 
     @property
     def is_on(self) -> bool:
-        """Return true if the endpoint is up (success)."""
+        """Return true if there is a problem (failure detected)."""
         endpoint_data = self._find_endpoint_data()
         if endpoint_data is None:
-            return False
+            return True  # No data = problem
 
         # Get the most recent result
         results = endpoint_data.get("results", [])
         if results:
-            # Return the success status of the most recent check
-            return results[-1].get("success", False)
+            # Return True if there's a problem (NOT successful)
+            return not results[-1].get("success", False)
 
-        return False
+        return True  # No results = problem
 
     @property
     def extra_state_attributes(self) -> dict[str, Any]:
