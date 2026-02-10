@@ -29,7 +29,7 @@ async def async_setup_entry(
     coordinator = entry.runtime_data.coordinator
 
     # Create a binary sensor for each endpoint from Gatus
-    sensors = []
+    sensors: list[GatusEndpointBinarySensor] = []
     if coordinator.data and isinstance(coordinator.data, list):
         sensors.extend(
             GatusEndpointBinarySensor(

@@ -1,0 +1,10 @@
+---
+extends: default
+
+ignore: |
+  .github/
+  config/blueprints
+  config/tts
+
+rules:
+  line-length: disable
