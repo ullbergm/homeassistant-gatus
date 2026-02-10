@@ -1,47 +1,61 @@
-# Notice
+# Gatus Integration for Home Assistant
 
-The component and platforms in this repository are not meant to be used by a
-user, but as a "blueprint" that custom component developers can build
-upon, to make more awesome stuff.
+A Home Assistant custom integration for [Gatus](https://github.com/TwiN/gatus) - a health check and monitoring tool.
 
-HAVE FUN! 😎
+## Features
 
-## Why?
+This integration connects to your Gatus instance and creates binary sensors for each monitored endpoint. Each sensor shows whether the endpoint is up (on) or down (off) based on the latest health check results from Gatus.
 
-This is simple, by having custom_components look (README + structure) the same
-it is easier for developers to help each other and for users to start using them.
+### What gets created
 
-If you are a developer and you want to add things to this "blueprint" that you think more
-developers will have use for, please open a PR to add it :)
+- **Binary Sensors**: One sensor for each endpoint monitored by Gatus
+  - **State**: On (up) or Off (down) based on the latest health check
+  - **Attributes**:
+    - Endpoint group
+    - Endpoint name
+    - Hostname
+    - HTTP status code
+    - Response duration (in milliseconds)
+    - Last check timestamp
 
-## What?
+## Installation
 
-This repository contains multiple files, here is a overview:
+### Manual Installation
 
-File | Purpose | Documentation
--- | -- | --
-`.devcontainer.json` | Used for development/testing with Visual Studio Code. | [Documentation](https://code.visualstudio.com/docs/remote/containers)
-`.github/ISSUE_TEMPLATE/*.yml` | Templates for the issue tracker | [Documentation](https://help.github.com/en/github/building-a-strong-community/configuring-issue-templates-for-your-repository)
-`.vscode/tasks.json` | Tasks for the devcontainer. | [Documentation](https://code.visualstudio.com/docs/editor/tasks)
-`custom_components/integration_blueprint/*` | Integration files, this is where everything happens. | [Documentation](https://developers.home-assistant.io/docs/creating_component_index)
-`CONTRIBUTING.md` | Guidelines on how to contribute. | [Documentation](https://help.github.com/en/github/building-a-strong-community/setting-guidelines-for-repository-contributors)
-`LICENSE` | The license file for the project. | [Documentation](https://help.github.com/en/github/creating-cloning-and-archiving-repositories/licensing-a-repository)
-`README.md` | The file you are reading now, should contain info about the integration, installation and configuration instructions. | [Documentation](https://help.github.com/en/github/writing-on-github/basic-writing-and-formatting-syntax)
-`requirements.txt` | Python packages used for development/lint/testing this integration. | [Documentation](https://pip.pypa.io/en/stable/user_guide/#requirements-files)
+1. Copy the `custom_components/gatus` folder to your Home Assistant `custom_components` directory
+2. Restart Home Assistant
 
-## How?
+### Configuration
 
-1. Create a new repository in GitHub, using this repository as a template by clicking the "Use this template" button in the GitHub UI.
-1. Open your new repository in Visual Studio Code devcontainer (Preferably with the "`Dev Containers: Clone Repository in Named Container Volume...`" option).
-1. Rename all instances of the `integration_blueprint` to `custom_components/<your_integration_domain>` (e.g. `custom_components/awesome_integration`).
-1. Rename all instances of the `Integration Blueprint` to `<Your Integration Name>` (e.g. `Awesome Integration`).
-1. Run the `scripts/develop` to start HA and test out your new integration.
+1. Go to **Settings** → **Devices & Services**
+2. Click **+ Add Integration**
+3. Search for "Gatus Integration"
+4. Enter your Gatus URL (e.g., `https://gatus.example.com`)
+5. The integration will automatically discover all endpoints from your Gatus instance
 
-## Next steps
+## Example Configuration
 
-These are some next steps you may want to look into:
-- Add tests to your integration, [`pytest-homeassistant-custom-component`](https://github.com/MatthewFlamm/pytest-homeassistant-custom-component) can help you get started.
-- Add brand images (logo/icon) to https://github.com/home-assistant/brands.
-- Create your first release.
-- Share your integration on the [Home Assistant Forum](https://community.home-assistant.io/).
-- Submit your integration to the [HACS](https://hacs.xyz/docs/publish/start).
+**Gatus URL**: `https://gatus.apps.openshift.ullberg.family`
+
+This will create binary sensors like:
+- `binary_sensor.adsb_dump978` - ADSB dump978 endpoint
+- `binary_sensor.external_google` - External Google endpoint
+- `binary_sensor.media_plex` - Media Plex endpoint
+- etc.
+
+## Update Frequency
+
+The integration polls Gatus every minute to update the status of all endpoints.
+
+## Development
+
+This integration was built using the Home Assistant integration blueprint.
+
+### Development Setup
+
+1. Open this repository in Visual Studio Code devcontainer
+2. Run `./scripts/develop` to start Home Assistant for testing
+
+## License
+
+See [LICENSE](LICENSE) file for details.

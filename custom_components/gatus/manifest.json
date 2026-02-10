@@ -1,0 +1,16 @@
+{
+  "domain": "gatus_integration",
+  "name": "Gatus Integration",
+  "codeowners": [
+    "@ullbergm"
+  ],
+  "config_flow": true,
+  "documentation": "https://github.com/ullbergm/homeassistant-gatus",
+  "iot_class": "cloud_polling",
+  "issue_tracker": "https://github.com/ullbergm/homeassistant-gatus/issues",
+  "requirements": [
+    "aiohttp",
+    "slugify"
+  ],
+  "version": "0.2.0"
+}
