@@ -9,19 +9,9 @@
   "packageRules": [
     {
       "matchManagers": [
-        "pip_requirements",
-        "pip_setup"
-      ],
-      "addLabels": [
-        "python"
-      ]
-    },
-    {
-      "matchManagers": [
         "github-actions"
       ],
-      "addLabels": [
-        "github_actions",
+      "labels": [
         "ci"
       ]
     },
@@ -29,7 +19,7 @@
       "matchDepTypes": [
         "devDependencies"
       ],
-      "addLabels": [
+      "labels": [
         "build"
       ]
     }
