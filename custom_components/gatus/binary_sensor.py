@@ -59,7 +59,7 @@ class GatusEndpointBinarySensor(GatusEntity, BinarySensorEntity):
         self._endpoint_key = endpoint_key
         self._endpoint_name = endpoint_name
         self._endpoint_group = endpoint_group
-        self._attr_device_class = BinarySensorDeviceClass.CONNECTIVITY
+        self._attr_device_class = BinarySensorDeviceClass.RUNNING
         self._attr_unique_id = f"{coordinator.config_entry.entry_id}_{endpoint_key}"
         # Using has_entity_name=True, so just the endpoint identification
         self._attr_name = f"{endpoint_group} {endpoint_name}"
