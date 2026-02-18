@@ -1,5 +1,8 @@
 # Gatus Integration for Home Assistant
 
+[![GitHub Release][releases-shield]][releases]
+[![hacs][hacsbadge]][hacs]
+
 A Home Assistant custom integration for [Gatus](https://github.com/TwiN/gatus) - a health check and monitoring tool.
 
 ## Features
@@ -54,7 +57,20 @@ mode: single
 
 ## Installation
 
-### Manual Installation
+
+## Installation instruction
+
+### HACS
+
+The easiest way to install this integration is with [HACS][hacs]. First, install [HACS][hacs-download] if you don't have it yet. In Home Assistant, go to `HACS -> Integrations`, click on `+ Explore & Download Repositories`, search for `Gatus`, and click download. After download, restart Home Assistant.
+
+[![Open your Home Assistant instance and open a repository inside the Home Assistant Community Store.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=ullbergm&repository=homeassistant-gatus&category=integration)
+
+Once the integration is installed, you can add it to the Home Assistant by going to `Configuration -> Devices & Services`, clicking `+ Add Integration` and searching for `Gatus` or, using My Home Assistant service, you can click on:
+
+[![Add Gatus][add-integration-badge]][add-integration]
+
+### Manual installation
 
 1. Copy the `custom_components/gatus` folder to your Home Assistant `custom_components` directory
 2. Restart Home Assistant
