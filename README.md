@@ -111,3 +111,19 @@ This integration was built using the Home Assistant integration blueprint.
 ## License
 
 See [LICENSE](LICENSE) file for details.
+
+## Notice
+
+Gatus and other names are trademarks of their respective owners.
+
+[add-integration]: https://my.home-assistant.io/redirect/config_flow_start?domain=gatus
+[add-integration-badge]: https://my.home-assistant.io/badges/config_flow_start.svg
+[hacs]: https://hacs.xyz
+[hacs-download]: https://hacs.xyz/docs/setup/download
+[hacsbadge]: https://img.shields.io/badge/HACS-Custom-blue.svg?style=flat
+[ha-logs]: https://my.home-assistant.io/redirect/logs
+[ha-logs-badge]: https://my.home-assistant.io/badges/logs.svg
+[ha-service]: https://my.home-assistant.io/redirect/developer_call_service/?service=logger.set_level
+[ha-service-badge]: https://my.home-assistant.io/badges/developer_call_service.svg
+[releases-shield]: https://img.shields.io/github/release/ullbergm/homeassistant-gatus.svg?style=flat
+[releases]: https://github.com/ullbergm/homeassistant-gatus/releases
