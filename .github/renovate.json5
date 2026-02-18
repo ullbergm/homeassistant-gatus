@@ -24,7 +24,6 @@
     "helmfile",
     "helm-requirements",
     "maven",
-    "regex",
     "custom.regex",
   ],
   customManagers: [
@@ -93,6 +92,7 @@
         "pipenv",
         "poetry",
         "pep621",
+        "custom.regex",
       ],
       matchUpdateTypes: ["major"],
       groupName: "Python major updates",
