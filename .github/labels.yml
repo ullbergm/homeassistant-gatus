@@ -1,66 +1,84 @@
----
-# Labels names are important as they are used by Release Drafter to decide
-# regarding where to record them in changelog or if to skip them.
+# GitHub Labels
+# Synced by the label-sync workflow. Edit this file to add/remove/rename labels.
+# https://github.com/EndBug/label-sync
 #
-# The repository labels will be automatically configured using this file and
-# the GitHub Action https://github.com/marketplace/actions/github-labeler.
-- name: breaking
-  description: Breaking Changes
-  color: bfd4f2
-- name: bug
-  description: Something isn't working
-  color: d73a4a
-- name: build
-  description: Build System and Dependencies
-  color: bfdadc
-- name: ci
-  description: Continuous Integration
-  color: 4a97d6
-- name: dependencies
-  description: Pull requests that update a dependency file
-  color: 0366d6
-- name: documentation
-  description: Improvements or additions to documentation
-  color: 0075ca
-- name: duplicate
-  description: This issue or pull request already exists
-  color: cfd3d7
+# Label-sync's delete-other-labels is set to false so manually applied labels
+# are preserved.
+
+# --- General category labels ---
+- name: feature
+  color: "0E8A16"
+  description: "New feature or enhancement"
+
 - name: enhancement
-  description: New feature or request
-  color: a2eeef
-- name: github_actions
-  description: Pull requests that update Github_actions code
-  color: "000000"
-- name: good first issue
-  description: Good for newcomers
-  color: 7057ff
-- name: help wanted
-  description: Extra attention is needed
-  color: 008672
-- name: invalid
-  description: This doesn't seem right
-  color: e4e669
+  color: "A2EEEF"
+  description: "Improvement to an existing feature"
+
+- name: bugfix
+  color: "D73A4A"
+  description: "Bug fix"
+
+- name: bug
+  color: "D73A4A"
+  description: "Something isn't working"
+
+- name: documentation
+  color: "0075CA"
+  description: "Documentation only changes"
+
+- name: maintenance
+  color: "FEF2C0"
+  description: "Maintenance work"
+
 - name: performance
-  description: Performance
-  color: "016175"
-- name: python
-  description: Pull requests that update Python code
-  color: 2b67c6
-- name: question
-  description: Further information is requested
-  color: d876e3
-- name: refactoring
-  description: Refactoring
-  color: ef67c4
-- name: removal
-  description: Removals and Deprecations
-  color: 9ae7ea
-- name: style
-  description: Style
-  color: c120e5
+  color: "F9D0C4"
+  description: "Performance improvement"
+
+- name: security
+  color: "B60205"
+  description: "Security fix or improvement"
+
 - name: testing
-  description: Testing
-  color: b1fc6f
-- name: wontfix
-  description: This will not be worked on
-  color: ffffff
+  color: "BFD4F2"
+  description: "Test-related changes"
+
+- name: dependencies
+  color: "0366D6"
+  description: "Dependency updates"
+
+- name: breaking
+  color: "D93F0B"
+  description: "Breaking change"
+
+# --- Workflow labels ---
+- name: "good first issue"
+  color: "7057FF"
+  description: "Good for newcomers"
+
+- name: "help wanted"
+  color: "008672"
+  description: "Extra attention is needed"
+
+- name: "wontfix"
+  color: "FFFFFF"
+  description: "This will not be worked on"
+
+- name: "duplicate"
+  color: "CFD3D7"
+  description: "This issue or pull request already exists"
+
+- name: "invalid"
+  color: "E4E669"
+  description: "This doesn't seem right"
+
+- name: "stale"
+  color: "9E6A03"
+  description: "No recent activity"
+
+- name: "pinned"
+  color: "006B75"
+  description: "Exempt from stale bot"
+
+- name: "question"
+  color: "D876E3"
+  description: "Further information is requested"

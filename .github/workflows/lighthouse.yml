@@ -1,0 +1,53 @@
+---
+name: Lighthouse
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - "docs/**"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  lighthouse:
+    name: Lighthouse audit
+    runs-on: ubuntu-latest
+    steps:
+      - name: ⤵️ Check out code from GitHub
+        uses: actions/checkout@v6
+
+      - name: 📦 Set up Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: lts/*
+          cache: npm
+          cache-dependency-path: docs/package-lock.json
+
+      - name: 📦 Install dependencies
+        run: npm ci
+        working-directory: docs
+
+      - name: 🏗️ Build docs site
+        run: npm run build
+        working-directory: docs
+
+      - name: 🔦 Run Lighthouse audit
+        uses: treosh/lighthouse-ci-action@v12
+        with:
+          uploadArtifacts: true
+          temporaryPublicStorage: true
+          configPath: docs/.lighthouserc.json
+
+      - name: 💬 Post Lighthouse results as PR comment
+        uses: treosh/lighthouse-ci-action@v12
+        with:
+          uploadArtifacts: false
+          temporaryPublicStorage: true
+          configPath: docs/.lighthouserc.json
+          # Post a summary comment on the PR
+          runs: 1

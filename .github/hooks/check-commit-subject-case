@@ -1,0 +1,31 @@
+#!/usr/bin/env bash
+# Validates that the conventional commit subject does not start with an
+# uppercase letter. Mirrors subjectPattern in conventional-commits.yml:
+#   ^(?![A-Z]).+$
+
+set -euo pipefail
+
+commit_msg_file="${1:?Usage: check-commit-subject-case <commit-msg-file>}"
+first_line=$(head -1 "$commit_msg_file")
+
+# Skip empty lines, comments, merge commits, and git-generated messages.
+if [[ -z "$first_line" ]] || \
+   [[ "$first_line" =~ ^# ]] || \
+   [[ "$first_line" =~ ^(Merge|Revert|fixup\!|squash\!) ]]; then
+  exit 0
+fi
+
+# Extract the subject: everything after "type(scope)!: "
+subject=$(printf '%s' "$first_line" | sed -E 's/^[a-z]+(\([^)]*\))?(!)?: //')
+
+if [[ "$subject" =~ ^[A-Z] ]]; then
+  echo "Commit subject must start with a lowercase letter."
+  echo ""
+  echo "  Found:    \"$subject\""
+  echo "  Expected: \"$(printf '%s' "$subject" | sed 's/./\L&/')\""
+  echo ""
+  echo "Examples:"
+  echo "  feat: add user authentication"
+  echo "  fix(api): handle null response"
+  exit 1
+fi

@@ -1,0 +1,55 @@
+name: Draft Release
+
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: write
+
+jobs:
+  draft-release:
+    name: Draft release
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Generate changelog
+        id: changelog
+        uses: orhun/git-cliff-action@v4
+        with:
+          config: .github/cliff.toml
+          args: --verbose --unreleased --strip header
+        env:
+          OUTPUT: CHANGES.md
+
+      - name: Determine next version
+        id: version
+        uses: orhun/git-cliff-action@v4
+        with:
+          config: .github/cliff.toml
+          args: --bumped-version
+        env:
+          OUTPUT: /tmp/version.txt
+
+      - name: Delete old draft releases
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release list --json tagName,isDraft --jq '.[] | select(.isDraft) | .tagName' | while read -r tag; do
+            echo "Deleting draft release: ${tag}"
+            gh release delete "${tag}" --yes
+          done
+
+      - name: Create draft release
+        uses: softprops/action-gh-release@v2
+        with:
+          draft: true
+          name: ${{ steps.version.outputs.content }}
+          tag_name: ${{ steps.version.outputs.content }}
+          body: ${{ steps.changelog.outputs.content }}
+          target_commitish: ${{ github.sha }}

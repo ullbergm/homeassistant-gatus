@@ -1,0 +1,18 @@
+# CODEOWNERS
+#
+# Controls who is automatically requested for review when a pull request
+# touches files matching a pattern.
+#
+# Syntax:  <pattern>  <@user or @org/team>
+# Docs:    https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners
+#
+# TODO: Replace the placeholder entries below with your actual team/users.
+
+# Default owner for all files not matched by a later rule
+* @ullbergm
+
+# GitHub Actions workflows
+# .github/workflows/  @my-org/platform-team
+
+# Documentation site
+# /docs/  @my-org/docs-team
