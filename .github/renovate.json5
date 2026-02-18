@@ -1,0 +1,90 @@
+{
+  $schema: "https://docs.renovatebot.com/renovate-schema.json",
+  extends: ["config:recommended"],
+  timezone: "UTC",
+  schedule: ["on monday"],
+  dependencyDashboard: true,
+  prConcurrentLimit: 5,
+  prHourlyLimit: 2,
+  pinDigests: false,
+  semanticCommits: "enabled",
+  semanticCommitType: "chore",
+  semanticCommitScope: "deps",
+  customManagers: [
+    {
+      customType: "regex",
+      datasourceTemplate: "pypi",
+      description: "Process HACS dependencies",
+      managerFilePatterns: ["**/hacs.json"],
+      depNameTemplate: "homeassistant",
+      versioningTemplate: "pep440",
+      matchStrings: [
+        '"homeassistant":\\s*"(?<currentValue>[^"]+)"'
+      ],
+    },
+  ],
+  packageRules: [
+    {
+      // Group all non-major updates across all ecosystems into a single PR
+      matchUpdateTypes: ["minor", "patch"],
+      groupName: "all non-major dependencies",
+      groupSlug: "all-non-major",
+    },
+    {
+      // Group all GitHub Actions updates (including major — version bumps are common and low-risk)
+      matchManagers: ["github-actions"],
+      groupName: "GitHub Actions",
+      groupSlug: "github-actions",
+      automerge: true,
+      automergeType: "pr",
+      // Only automerge during the same window as the regular schedule
+      automergeSchedule: ["on monday"],
+    },
+    {
+      // Group all Kubernetes and Helm updates
+      matchManagers: [
+        "kubernetes",
+        "helm-values",
+        "helmfile",
+        "helm-requirements",
+      ],
+      groupName: "Kubernetes & Helm",
+      groupSlug: "k8s-helm",
+    },
+    {
+      // Group all Go major updates
+      matchManagers: ["gomod"],
+      matchUpdateTypes: ["major"],
+      groupName: "Go major updates",
+      groupSlug: "go-major",
+    },
+    {
+      // Group all npm major updates
+      matchManagers: ["npm"],
+      matchUpdateTypes: ["major"],
+      groupName: "npm major updates",
+      groupSlug: "npm-major",
+    },
+    {
+      // Group all Maven major updates
+      matchManagers: ["maven"],
+      matchUpdateTypes: ["major"],
+      groupName: "Maven major updates",
+      groupSlug: "maven-major",
+    },
+    {
+      // Group all Python major updates
+      matchManagers: [
+        "pip_requirements",
+        "pip-compile",
+        "pipenv",
+        "poetry",
+        "pep621",
+        "custom.regex",
+      ],
+      matchUpdateTypes: ["major"],
+      groupName: "Python major updates",
+      groupSlug: "python-major",
+    },
+  ],
+}

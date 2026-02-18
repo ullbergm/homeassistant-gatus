@@ -1,0 +1,49 @@
+---
+name: OpenSSF Scorecard
+
+on:
+  push:
+    branches:
+      - main
+  # Run weekly so the badge and SARIF results stay fresh
+  schedule:
+    - cron: '0 9 * * 1'
+  workflow_dispatch:
+
+permissions: read-all
+
+jobs:
+  scorecard:
+    name: Scorecard analysis
+    runs-on: ubuntu-latest
+    # Scorecard requires GraphQL access that GITHUB_TOKEN cannot grant on
+    # private repos. This job is a no-op until the repo is made public, at
+    # which point it will start running automatically.
+    if: github.event.repository.visibility == 'public'
+    permissions:
+      # Required to upload the SARIF results to GitHub code-scanning
+      security-events: write
+      # Required to publish results to the OpenSSF REST API (public repos only)
+      id-token: write
+      contents: read
+      actions: read
+
+    steps:
+      - name: ⤵️ Check out code from GitHub
+        uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+
+      - name: 🔒 Run OpenSSF Scorecard
+        uses: ossf/scorecard-action@v2.4.2
+        with:
+          results_file: scorecard-results.sarif
+          results_format: sarif
+          # Job only runs when visibility == 'public', so publishing is safe.
+          publish_results: true
+
+      - name: 📤 Upload SARIF results to GitHub code-scanning
+        uses: github/codeql-action/upload-sarif@v4
+        with:
+          sarif_file: scorecard-results.sarif
+          category: scorecard

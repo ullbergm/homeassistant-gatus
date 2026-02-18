@@ -1,0 +1,67 @@
+# git-cliff configuration
+# https://git-cliff.org/docs/configuration
+
+[changelog]
+# Template for the changelog body
+body = """
+{% if version %}\
+    ## [{{ version | trim_start_matches(pat="v") }}] - {{ timestamp | date(format="%Y-%m-%d") }}
+{% else %}\
+    ## What Changed
+{% endif %}\
+{% for group, commits in commits | group_by(attribute="group") %}
+    ### {{ group | striptags | trim | upper_first }}
+    {% for commit in commits %}
+        - {% if commit.scope %}*({{ commit.scope }})* {% endif %}\
+            {% if commit.breaking %}[**breaking**] {% endif %}\
+            {{ commit.message | upper_first }} \
+            ({{ commit.id | truncate(length=7, end="") }})\
+    {% endfor %}
+{% endfor %}\n
+"""
+# Remove leading and trailing whitespace from templates
+trim = true
+# Changelog footer
+footer = ""
+
+[git]
+# Parse conventional commits
+# https://www.conventionalcommits.org
+conventional_commits = true
+filter_unconventional = true
+split_commits = false
+
+# Map commit types to changelog sections
+commit_parsers = [
+    { message = "\\[skip changelog\\]", skip = true },
+    { message = "^feat", group = "<!-- 0 -->🚀 Features" },
+    { message = "^fix", group = "<!-- 1 -->🐛 Bug Fixes" },
+    { message = "^perf", group = "<!-- 2 -->⚡ Performance" },
+    { message = "^refactor", group = "<!-- 3 -->🔨 Refactor" },
+    { message = "^docs", group = "<!-- 4 -->📝 Documentation" },
+    { message = "^style", group = "<!-- 5 -->🎨 Styling" },
+    { message = "^test", group = "<!-- 6 -->🧪 Testing" },
+    { message = "^build", group = "<!-- 7 -->📦 Build" },
+    { message = "^build\\(release\\)", skip = true },
+    { message = "^ci", group = "<!-- 8 -->🤖 CI" },
+    { message = "^chore\\(release\\)", skip = true },
+    { message = "^chore", group = "<!-- 9 -->🧹 Chores" },
+    { message = "^revert", group = "<!-- 10 -->⏪ Reverted" },
+]
+
+# Protect against breaking changes
+protect_breaking_commits = true
+# Filter out merge commits
+filter_commits = false
+# Regex to match git tags for releases
+tag_pattern = "v[0-9].*"
+# Sort commits by oldest first
+sort_commits = "oldest"
+
+# Bump version based on conventional commits
+[bump]
+features_always_bump_minor = true
+breaking_always_bump_major = true
+# Prefix bumped version with "v" to match tag_pattern
+initial_tag = "v0.1.0"
+tag_prefix = "v"
