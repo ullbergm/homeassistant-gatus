@@ -25,11 +25,12 @@
     "helm-requirements",
     "maven",
     "regex",
+    "custom.regex",
   ],
   customManagers: [
     {
       customType: "regex",
-      fileMatch: ["(^|/)hacs\\.json$"],
+      managerFilePatterns: ["hacs.json"],
       matchStrings: ['"homeassistant":\\s*"(?<currentValue>[^"]+)"'],
       depNameTemplate: "homeassistant",
       datasourceTemplate: "pypi",
