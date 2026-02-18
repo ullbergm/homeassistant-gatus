@@ -29,7 +29,7 @@
   customManagers: [
     {
       customType: "regex",
-      fileMatch: ["^hacs\\.json$"],
+      fileMatch: ["(^|/)hacs\\.json$"],
       matchStrings: ['"homeassistant":\\s*"(?<currentValue>[^"]+)"'],
       depNameTemplate: "homeassistant",
       datasourceTemplate: "pypi",
