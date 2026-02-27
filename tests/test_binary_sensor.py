@@ -149,3 +149,30 @@ class TestGatusEndpointBinarySensorUniqueId:
         coordinator = _make_coordinator(data=MOCK_ENDPOINT_DATA)
         sensor = _make_sensor(coordinator, name="plex", group="media")
         assert sensor.name == "media plex"
+
+
+class TestGatusEntityDeviceInfo:
+    """Tests for base entity device info metadata."""
+
+    def test_sw_version_is_stringified(self) -> None:
+        """Integration version objects are normalized to a string."""
+
+        class VersionObject:
+            def __str__(self) -> str:
+                return "1.2.3"
+
+        coordinator = _make_coordinator(data=MOCK_ENDPOINT_DATA)
+        coordinator.config_entry.runtime_data.integration.version = VersionObject()
+
+        sensor = _make_sensor(coordinator)
+
+        assert sensor.device_info["sw_version"] == "1.2.3"
+
+    def test_invalid_sw_version_is_omitted(self) -> None:
+        """Invalid integration versions are not exposed as sw_version."""
+        coordinator = _make_coordinator(data=MOCK_ENDPOINT_DATA)
+        coordinator.config_entry.runtime_data.integration.version = "main"
+
+        sensor = _make_sensor(coordinator)
+
+        assert sensor.device_info.get("sw_version") is None
