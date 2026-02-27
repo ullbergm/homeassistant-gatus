@@ -57,28 +57,28 @@ jobs:
       - name: Hassfest validation
         uses: "home-assistant/actions/hassfest@master"
 
-  # tests:
-  #   runs-on: "ubuntu-latest"
-  #   name: Run tests
-  #   steps:
-  #     - name: Check out code from GitHub
-  #       uses: "actions/checkout@v5.0.0"
-  #     - name: Setup Python ${{ env.DEFAULT_PYTHON }}
-  #       uses: "actions/setup-python@v5.6.0"
-  #       with:
-  #         python-version: ${{ env.DEFAULT_PYTHON }}
-  #     - name: Install uv
-  #       uses: astral-sh/setup-uv@v6.4.3
-  #       with:
-  #         version: "0.6"
-  #     - name: Install requirements
-  #       run: |
-  #         uv pip install -r requirements_dev.txt --system
-  #     - name: Tests suite
-  #       run: |
-  #         pytest -p no:sugar
-  #     - name: Upload coverage to Codecov
-  #       uses: codecov/codecov-action@v5.5.1
-  #       with:
-  #         env_vars: OS,PYTHON
-  #         verbose: true
+  tests:
+    runs-on: "ubuntu-latest"
+    name: Run tests
+    steps:
+      - name: Check out code from GitHub
+        uses: "actions/checkout@v6.0.2"
+      - name: Setup Python ${{ env.DEFAULT_PYTHON }}
+        uses: "actions/setup-python@v6.2.0"
+        with:
+          python-version: ${{ env.DEFAULT_PYTHON }}
+      - name: Install uv
+        uses: astral-sh/setup-uv@v7.3.0
+        with:
+          version: "0.10"
+      - name: Install requirements
+        run: |
+          uv pip install -r requirements_dev.txt --system
+      - name: Tests suite
+        run: |
+          pytest -p no:sugar --cov=custom_components/gatus --cov-report=xml
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v5.5.1
+        with:
+          env_vars: OS,PYTHON
+          verbose: true
