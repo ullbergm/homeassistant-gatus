@@ -16,9 +16,11 @@ from .const import LOGGER
 if TYPE_CHECKING:
     from .data import GatusConfigEntry
 
+type GatusCoordinatorData = list[dict[str, Any]]
+
 
 # https://developers.home-assistant.io/docs/integration_fetching_data#coordinated-single-api-poll-for-data-for-all-entities
-class GatusDataUpdateCoordinator(DataUpdateCoordinator):
+class GatusDataUpdateCoordinator(DataUpdateCoordinator[GatusCoordinatorData]):
     """Class to manage fetching data from the Gatus API."""
 
     config_entry: GatusConfigEntry

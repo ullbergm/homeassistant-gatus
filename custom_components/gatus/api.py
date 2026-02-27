@@ -73,6 +73,9 @@ class GatusApiClient:
                 _verify_response_or_raise(response)
                 return await response.json()
 
+        except GatusApiClientError:
+            # Already the right exception type — let it propagate as-is.
+            raise
         except TimeoutError as exception:
             msg = f"Timeout error fetching information - {exception}"
             raise GatusApiClientCommunicationError(

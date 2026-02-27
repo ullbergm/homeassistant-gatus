@@ -30,6 +30,14 @@ class GatusEntity(CoordinatorEntity[GatusDataUpdateCoordinator]):
         except (ValueError, AttributeError):
             device_name = gatus_url
 
+        # Retrieve the integration version for device registry display
+        try:
+            sw_version: str | None = (
+                coordinator.config_entry.runtime_data.integration.version
+            )
+        except AttributeError:
+            sw_version = None
+
         self._attr_device_info = DeviceInfo(
             identifiers={
                 (
@@ -41,4 +49,5 @@ class GatusEntity(CoordinatorEntity[GatusDataUpdateCoordinator]):
             manufacturer="Gatus",
             model="Health Monitor",
             configuration_url=gatus_url,
+            sw_version=sw_version,
         )

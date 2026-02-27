@@ -15,7 +15,7 @@ from homeassistant.const import CONF_URL, Platform
 from homeassistant.loader import async_get_loaded_integration
 
 from .api import GatusApiClient
-from .const import DOMAIN, LOGGER
+from .const import CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL, DOMAIN, LOGGER
 from .coordinator import GatusDataUpdateCoordinator
 from .data import GatusData
 
@@ -35,11 +35,12 @@ async def async_setup_entry(
     entry: GatusConfigEntry,
 ) -> bool:
     """Set up this integration using UI."""
+    scan_interval = entry.options.get(CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL)
     coordinator = GatusDataUpdateCoordinator(
         hass=hass,
         logger=LOGGER,
         name=DOMAIN,
-        update_interval=timedelta(minutes=1),
+        update_interval=timedelta(seconds=int(scan_interval)),
     )
     # Create connector with threaded resolver to avoid aiodns issues with Python 3.13
     connector = aiohttp.TCPConnector(resolver=aiohttp.ThreadedResolver())
