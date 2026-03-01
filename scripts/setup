@@ -2,6 +2,20 @@
 
 set -e
 
+mkdir -p /home/vscode/.ssh
+
+if [ -d /.ssh-mount ] && [ "$(ls -A /.ssh-mount 2>/dev/null)" ]; then
+  echo "📋 Copying SSH keys..."
+  cp -r /.ssh-mount/. /home/vscode/.ssh/
+  chmod 700 /home/vscode/.ssh
+
+  # Set permissions for public keys
+  find /home/vscode/.ssh -type f -name '*.pub' -exec chmod 644 {} \;
+
+  # Set permissions for private keys
+  find /home/vscode/.ssh -type f ! -name '*.pub' ! -name 'known_hosts*' ! -name 'config' ! -name 'authorized_keys' -exec chmod 600 {} \;
+fi
+
 cd "$(dirname "$0")/.."
 python3 -m pip install --upgrade pip
 python3 -m pip install --requirement requirements.txt

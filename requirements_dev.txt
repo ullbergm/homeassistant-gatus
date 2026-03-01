@@ -2,3 +2,6 @@
 pre-commit
 pylint
 mypy
+pytest
+pytest-asyncio
+pytest-cov

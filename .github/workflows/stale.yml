@@ -22,6 +22,7 @@ jobs:
              occurs. Thank you for your contributions."
           close-issue-message: ""
           days-before-stale: 30
+          days-before-stale-pr: 14
           days-before-close: 3
           exempt-draft-pr: true
           exempt-issue-labels:

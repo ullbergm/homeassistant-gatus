@@ -27,21 +27,34 @@ async def async_setup_entry(
 ) -> None:
     """Set up the binary_sensor platform."""
     coordinator = entry.runtime_data.coordinator
+    known_endpoint_keys: set[str] = set()
 
-    # Create a binary sensor for each endpoint from Gatus
-    sensors: list[GatusEndpointBinarySensor] = []
-    if coordinator.data and isinstance(coordinator.data, list):
-        sensors.extend(
-            GatusEndpointBinarySensor(
-                coordinator=coordinator,
-                endpoint_key=endpoint.get("key"),
-                endpoint_name=endpoint.get("name"),
-                endpoint_group=endpoint.get("group"),
-            )
-            for endpoint in coordinator.data
-        )
+    def _add_new_endpoints() -> None:
+        """Add entities for any endpoints not yet registered."""
+        if not coordinator.data or not isinstance(coordinator.data, list):
+            return
 
-    async_add_entities(sensors)
+        new_sensors: list[GatusEndpointBinarySensor] = []
+        for endpoint in coordinator.data:
+            key = endpoint.get("key")
+            if key and key not in known_endpoint_keys:
+                known_endpoint_keys.add(key)
+                new_sensors.append(
+                    GatusEndpointBinarySensor(
+                        coordinator=coordinator,
+                        endpoint_key=key,
+                        endpoint_name=endpoint.get("name", ""),
+                        endpoint_group=endpoint.get("group", ""),
+                    )
+                )
+
+        if new_sensors:
+            async_add_entities(new_sensors)
+
+    # Add initial entities and register a listener for future coordinator updates
+    # so that endpoints added to Gatus after setup are picked up automatically.
+    _add_new_endpoints()
+    entry.async_on_unload(coordinator.async_add_listener(_add_new_endpoints))
 
 
 class GatusEndpointBinarySensor(GatusEntity, BinarySensorEntity):
@@ -63,7 +76,6 @@ class GatusEndpointBinarySensor(GatusEntity, BinarySensorEntity):
         self._attr_unique_id = f"{coordinator.config_entry.entry_id}_{endpoint_key}"
         # Using has_entity_name=True, so just the endpoint identification
         self._attr_name = f"{endpoint_group} {endpoint_name}"
-        self._attr_translation_key = "endpoint_status"
 
     def _find_endpoint_data(self) -> dict[str, Any] | None:
         """Find this endpoint's data in the coordinator data."""
