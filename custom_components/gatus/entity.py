@@ -66,6 +66,12 @@ class GatusEntity(CoordinatorEntity[GatusDataUpdateCoordinator]):
         if not version:
             return None
 
+        if not any(char.isdigit() for char in version):
+            LOGGER.debug(
+                "Skipping non-version integration value for sw_version: %s", version
+            )
+            return None
+
         try:
             AwesomeVersion(version)
         except AwesomeVersionException:
