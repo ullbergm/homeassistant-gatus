@@ -6,7 +6,6 @@ from urllib.parse import urlparse
 
 from awesomeversion import AwesomeVersion
 from awesomeversion.exceptions import AwesomeVersionException
-
 from homeassistant.const import CONF_URL
 from homeassistant.helpers.device_registry import DeviceInfo
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
