@@ -106,17 +106,23 @@ class TestGatusOptionsFlowHandler:
         mock_entry.options = {}
 
         flow = GatusOptionsFlowHandler()
-        flow.async_create_entry = MagicMock(return_value={"type": "create_entry"})
 
-        with patch.object(
-            type(flow),
-            "config_entry",
-            new_callable=PropertyMock,
-            return_value=mock_entry,
+        with (
+            patch.object(
+                type(flow),
+                "config_entry",
+                new_callable=PropertyMock,
+                return_value=mock_entry,
+            ),
+            patch.object(
+                flow,
+                "async_create_entry",
+                return_value={"type": "create_entry"},
+            ) as mock_create_entry,
         ):
             user_input = {CONF_SCAN_INTERVAL: 120}
             await flow.async_step_init(user_input=user_input)
-            flow.async_create_entry.assert_called_once_with(data=user_input)
+            mock_create_entry.assert_called_once_with(data=user_input)
 
     async def test_init_shows_form_when_no_input(self) -> None:
         """Options flow shows form when no user input is provided."""
@@ -124,17 +130,23 @@ class TestGatusOptionsFlowHandler:
         mock_entry.options = {CONF_SCAN_INTERVAL: 60}
 
         flow = GatusOptionsFlowHandler()
-        flow.async_show_form = MagicMock(return_value={"type": "form"})
 
-        with patch.object(
-            type(flow),
-            "config_entry",
-            new_callable=PropertyMock,
-            return_value=mock_entry,
+        with (
+            patch.object(
+                type(flow),
+                "config_entry",
+                new_callable=PropertyMock,
+                return_value=mock_entry,
+            ),
+            patch.object(
+                flow,
+                "async_show_form",
+                return_value={"type": "form"},
+            ) as mock_show_form,
         ):
             await flow.async_step_init(user_input=None)
-            flow.async_show_form.assert_called_once()
-            call_kwargs = flow.async_show_form.call_args.kwargs
+            mock_show_form.assert_called_once()
+            call_kwargs = mock_show_form.call_args.kwargs
             assert call_kwargs["step_id"] == "init"
 
     def test_default_scan_interval_constant(self) -> None:

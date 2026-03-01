@@ -165,8 +165,10 @@ class TestGatusEntityDeviceInfo:
         coordinator.config_entry.runtime_data.integration.version = VersionObject()
 
         sensor = _make_sensor(coordinator)
+        device_info = sensor.device_info
+        assert device_info is not None
 
-        assert sensor.device_info["sw_version"] == "1.2.3"
+        assert device_info["sw_version"] == "1.2.3"
 
     def test_invalid_sw_version_is_omitted(self) -> None:
         """Invalid integration versions are not exposed as sw_version."""
@@ -174,5 +176,7 @@ class TestGatusEntityDeviceInfo:
         coordinator.config_entry.runtime_data.integration.version = "main"
 
         sensor = _make_sensor(coordinator)
+        device_info = sensor.device_info
+        assert device_info is not None
 
-        assert sensor.device_info.get("sw_version") is None
+        assert device_info.get("sw_version") is None

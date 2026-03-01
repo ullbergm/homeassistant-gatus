@@ -45,6 +45,7 @@ repos:
         entry: mypy
         language: system
         types: [python]
+        args: ["--explicit-package-bases"]
         require_serial: true
         files: ^(custom_components/gatus|tests)/.+\.py$
   # Validate conventional commit message format and allowed types.

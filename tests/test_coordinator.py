@@ -30,7 +30,7 @@ def _make_coordinator(client: MagicMock) -> GatusDataUpdateCoordinator:
     coordinator._listeners = {}
     coordinator.last_update_success = True
     coordinator.last_exception = None
-    coordinator.data = None
+    coordinator.data = []
     return coordinator
 
 
