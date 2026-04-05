@@ -25,20 +25,17 @@ async def async_get_config_entry_diagnostics(
     endpoint_summary: list[dict[str, Any]] = []
     if coordinator.data and isinstance(coordinator.data, list):
         for endpoint in coordinator.data:
-            results = endpoint.get("results", [])
-            latest = results[-1] if results else {}
+            latest = endpoint.latest_result
             endpoint_summary.append(
                 {
-                    "key": endpoint.get("key"),
-                    "name": endpoint.get("name"),
-                    "group": endpoint.get("group"),
-                    "success": latest.get("success"),
-                    "status_code": latest.get("status"),
-                    "duration_ms": (
-                        latest.get("duration", 0) / 1_000_000 if latest else None
-                    ),
-                    "timestamp": latest.get("timestamp"),
-                    "result_count": len(results),
+                    "key": endpoint.key,
+                    "name": endpoint.name,
+                    "group": endpoint.group,
+                    "success": latest.success if latest else None,
+                    "status_code": latest.status_code if latest else None,
+                    "duration_ms": latest.duration_ms if latest else None,
+                    "timestamp": latest.timestamp if latest else None,
+                    "result_count": len(endpoint.results),
                 }
             )
 

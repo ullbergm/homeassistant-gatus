@@ -6,8 +6,11 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
+from custom_components.gatus.models import GatusEndpoint
+
 MOCK_URL = "http://gatus.example.com"
 
+# Raw wire-format dicts
 MOCK_ENDPOINT_DATA = [
     {
         "key": "external_google",
@@ -39,11 +42,20 @@ MOCK_ENDPOINT_DATA = [
     },
 ]
 
+# Typed counterpart — used by binary_sensor and coordinator tests.
+MOCK_ENDPOINTS = [GatusEndpoint.from_dict(d) for d in MOCK_ENDPOINT_DATA]
+
 
 @pytest.fixture
 def mock_endpoint_data() -> list[dict]:
-    """Return mock Gatus endpoint data."""
+    """Return mock Gatus endpoint data as raw dicts (wire format)."""
     return MOCK_ENDPOINT_DATA.copy()
+
+
+@pytest.fixture
+def mock_endpoints() -> list[GatusEndpoint]:
+    """Return mock Gatus endpoint data as typed objects."""
+    return [GatusEndpoint.from_dict(d) for d in MOCK_ENDPOINT_DATA]
 
 
 @pytest.fixture

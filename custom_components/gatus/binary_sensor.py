@@ -18,6 +18,7 @@ if TYPE_CHECKING:
 
     from .coordinator import GatusDataUpdateCoordinator
     from .data import GatusConfigEntry
+    from .models import GatusEndpoint
 
 
 async def async_setup_entry(
@@ -36,15 +37,14 @@ async def async_setup_entry(
 
         new_sensors: list[GatusEndpointBinarySensor] = []
         for endpoint in coordinator.data:
-            key = endpoint.get("key")
-            if key and key not in known_endpoint_keys:
-                known_endpoint_keys.add(key)
+            if endpoint.key and endpoint.key not in known_endpoint_keys:
+                known_endpoint_keys.add(endpoint.key)
                 new_sensors.append(
                     GatusEndpointBinarySensor(
                         coordinator=coordinator,
-                        endpoint_key=key,
-                        endpoint_name=endpoint.get("name", ""),
-                        endpoint_group=endpoint.get("group", ""),
+                        endpoint_key=endpoint.key,
+                        endpoint_name=endpoint.name,
+                        endpoint_group=endpoint.group,
                     )
                 )
 
@@ -77,13 +77,13 @@ class GatusEndpointBinarySensor(GatusEntity, BinarySensorEntity):
         # Using has_entity_name=True, so just the endpoint identification
         self._attr_name = f"{endpoint_group} {endpoint_name}"
 
-    def _find_endpoint_data(self) -> dict[str, Any] | None:
-        """Find this endpoint's data in the coordinator data."""
+    def _find_endpoint(self) -> GatusEndpoint | None:
+        """Find this endpoint's typed data in the coordinator data."""
         if not self.coordinator.data or not isinstance(self.coordinator.data, list):
             return None
 
         for endpoint in self.coordinator.data:
-            if endpoint.get("key") == self._endpoint_key:
+            if endpoint.key == self._endpoint_key:
                 return endpoint
 
         return None
@@ -98,9 +98,9 @@ class GatusEndpointBinarySensor(GatusEntity, BinarySensorEntity):
             )
             return False
 
-        # Check if this specific endpoint exists in the data and has results
-        endpoint_data = self._find_endpoint_data()
-        if endpoint_data is None:
+        # Check if this specific endpoint exists in the data and has a latest result
+        endpoint = self._find_endpoint()
+        if endpoint is None:
             LOGGER.debug(
                 "Entity %s unavailable: endpoint data not found for key %s",
                 self.entity_id,
@@ -108,9 +108,7 @@ class GatusEndpointBinarySensor(GatusEntity, BinarySensorEntity):
             )
             return False
 
-        # Check if endpoint has results
-        results = endpoint_data.get("results", [])
-        if len(results) == 0:
+        if endpoint.latest_result is None:
             LOGGER.debug(
                 "Entity %s unavailable: no results for endpoint %s",
                 self.entity_id,
@@ -124,36 +122,32 @@ class GatusEndpointBinarySensor(GatusEntity, BinarySensorEntity):
     @property
     def is_on(self) -> bool:
         """Return true if there is a problem (failure detected)."""
-        endpoint_data = self._find_endpoint_data()
-        if endpoint_data is None:
+        endpoint = self._find_endpoint()
+        if endpoint is None:
             return True  # No data = problem
 
-        # Get the most recent result
-        results = endpoint_data.get("results", [])
-        if results:
-            # Return True if there's a problem (NOT successful)
-            return not results[-1].get("success", False)
+        latest = endpoint.latest_result
+        if latest is None:
+            return True  # No results = problem
 
-        return True  # No results = problem
+        return not latest.success
 
     @property
     def extra_state_attributes(self) -> dict[str, Any]:
         """Return additional state attributes."""
-        endpoint_data = self._find_endpoint_data()
-        if endpoint_data is None:
+        endpoint = self._find_endpoint()
+        if endpoint is None:
             return {}
 
-        results = endpoint_data.get("results", [])
-        if results:
-            latest_result = results[-1]
-            return {
-                "endpoint_group": self._endpoint_group,
-                "endpoint_name": self._endpoint_name,
-                "hostname": latest_result.get("hostname"),
-                "status_code": latest_result.get("status"),
-                "duration_ms": latest_result.get("duration", 0)
-                / 1_000_000,  # Convert nanoseconds to milliseconds
-                "timestamp": latest_result.get("timestamp"),
-            }
+        latest = endpoint.latest_result
+        if latest is None:
+            return {}
 
-        return {}
+        return {
+            "endpoint_group": self._endpoint_group,
+            "endpoint_name": self._endpoint_name,
+            "hostname": latest.hostname,
+            "status_code": latest.status_code,
+            "duration_ms": latest.duration_ms,
+            "timestamp": latest.timestamp,
+        }

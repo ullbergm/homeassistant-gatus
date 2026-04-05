@@ -7,12 +7,15 @@ from unittest.mock import MagicMock
 import pytest
 
 from custom_components.gatus.binary_sensor import GatusEndpointBinarySensor
+from custom_components.gatus.models import GatusEndpoint, GatusResult
 
-from .conftest import MOCK_ENDPOINT_DATA, MOCK_URL
+from .conftest import MOCK_ENDPOINT_DATA, MOCK_ENDPOINTS, MOCK_URL
 
 
-def _make_coordinator(data: list | None = None, success: bool = True) -> MagicMock:
-    """Build a minimal mock coordinator."""
+def _make_coordinator(
+    data: list[GatusEndpoint] | None = None, success: bool = True
+) -> MagicMock:
+    """Build a minimal mock coordinator with typed endpoint data."""
     coordinator = MagicMock()
     coordinator.data = data
     coordinator.last_update_success = success
@@ -43,13 +46,13 @@ class TestGatusEndpointBinarySensorIsOn:
 
     def test_is_on_false_when_success_true(self) -> None:
         """Sensor reports 'off' (no problem) when latest result is successful."""
-        coordinator = _make_coordinator(data=MOCK_ENDPOINT_DATA)
+        coordinator = _make_coordinator(data=MOCK_ENDPOINTS)
         sensor = _make_sensor(coordinator)
         assert sensor.is_on is False
 
     def test_is_on_true_when_success_false(self) -> None:
         """Sensor reports 'on' (problem) when latest result is failing."""
-        coordinator = _make_coordinator(data=MOCK_ENDPOINT_DATA)
+        coordinator = _make_coordinator(data=MOCK_ENDPOINTS)
         sensor = _make_sensor(coordinator, key="media_plex", name="plex", group="media")
         assert sensor.is_on is True
 
@@ -61,14 +64,14 @@ class TestGatusEndpointBinarySensorIsOn:
 
     def test_is_on_true_when_endpoint_not_found(self) -> None:
         """Sensor reports 'on' when its key is missing from coordinator data."""
-        coordinator = _make_coordinator(data=MOCK_ENDPOINT_DATA)
+        coordinator = _make_coordinator(data=MOCK_ENDPOINTS)
         sensor = _make_sensor(coordinator, key="nonexistent_key")
         assert sensor.is_on is True
 
     def test_is_on_true_when_no_results(self) -> None:
         """Sensor reports 'on' when the endpoint exists but has no results."""
         data = [
-            {"key": "empty_endpoint", "name": "empty", "group": "test", "results": []}
+            GatusEndpoint(key="empty_endpoint", name="empty", group="test", results=[])
         ]
         coordinator = _make_coordinator(data=data)
         sensor = _make_sensor(
@@ -82,25 +85,25 @@ class TestGatusEndpointBinarySensorAvailable:
 
     def test_available_when_coordinator_success_and_data_present(self) -> None:
         """Sensor is available when coordinator succeeds and endpoint has results."""
-        coordinator = _make_coordinator(data=MOCK_ENDPOINT_DATA, success=True)
+        coordinator = _make_coordinator(data=MOCK_ENDPOINTS, success=True)
         sensor = _make_sensor(coordinator)
         assert sensor.available is True
 
     def test_unavailable_when_coordinator_failed(self) -> None:
         """Sensor is unavailable when last_update_success is False."""
-        coordinator = _make_coordinator(data=MOCK_ENDPOINT_DATA, success=False)
+        coordinator = _make_coordinator(data=MOCK_ENDPOINTS, success=False)
         sensor = _make_sensor(coordinator)
         assert sensor.available is False
 
     def test_unavailable_when_endpoint_missing(self) -> None:
         """Sensor is unavailable when its key is not in coordinator data."""
-        coordinator = _make_coordinator(data=MOCK_ENDPOINT_DATA, success=True)
+        coordinator = _make_coordinator(data=MOCK_ENDPOINTS, success=True)
         sensor = _make_sensor(coordinator, key="gone_endpoint")
         assert sensor.available is False
 
     def test_unavailable_when_no_results(self) -> None:
         """Sensor is unavailable when the endpoint has an empty results list."""
-        data = [{"key": "no_results", "name": "x", "group": "y", "results": []}]
+        data = [GatusEndpoint(key="no_results", name="x", group="y", results=[])]
         coordinator = _make_coordinator(data=data, success=True)
         sensor = _make_sensor(coordinator, key="no_results", name="x", group="y")
         assert sensor.available is False
@@ -111,7 +114,7 @@ class TestGatusEndpointBinarySensorAttributes:
 
     def test_attributes_populated_from_latest_result(self) -> None:
         """Attributes reflect the latest result in coordinator data."""
-        coordinator = _make_coordinator(data=MOCK_ENDPOINT_DATA)
+        coordinator = _make_coordinator(data=MOCK_ENDPOINTS)
         sensor = _make_sensor(coordinator)
         attrs = sensor.extra_state_attributes
         assert attrs["endpoint_group"] == "external"
@@ -129,7 +132,7 @@ class TestGatusEndpointBinarySensorAttributes:
 
     def test_empty_attributes_when_no_results(self) -> None:
         """Attributes are empty when the endpoint has no results."""
-        data = [{"key": "k", "name": "n", "group": "g", "results": []}]
+        data = [GatusEndpoint(key="k", name="n", group="g", results=[])]
         coordinator = _make_coordinator(data=data)
         sensor = _make_sensor(coordinator, key="k", name="n", group="g")
         assert sensor.extra_state_attributes == {}
@@ -140,13 +143,13 @@ class TestGatusEndpointBinarySensorUniqueId:
 
     def test_unique_id_combines_entry_id_and_key(self) -> None:
         """Unique ID is entry_id + endpoint key."""
-        coordinator = _make_coordinator(data=MOCK_ENDPOINT_DATA)
+        coordinator = _make_coordinator(data=MOCK_ENDPOINTS)
         sensor = _make_sensor(coordinator, key="my_endpoint")
         assert sensor.unique_id == "test_entry_id_my_endpoint"
 
     def test_name_combines_group_and_name(self) -> None:
         """Entity name is '{group} {name}'."""
-        coordinator = _make_coordinator(data=MOCK_ENDPOINT_DATA)
+        coordinator = _make_coordinator(data=MOCK_ENDPOINTS)
         sensor = _make_sensor(coordinator, name="plex", group="media")
         assert sensor.name == "media plex"
 
@@ -161,7 +164,7 @@ class TestGatusEntityDeviceInfo:
             def __str__(self) -> str:
                 return "1.2.3"
 
-        coordinator = _make_coordinator(data=MOCK_ENDPOINT_DATA)
+        coordinator = _make_coordinator(data=MOCK_ENDPOINTS)
         coordinator.config_entry.runtime_data.integration.version = VersionObject()
 
         sensor = _make_sensor(coordinator)
@@ -172,7 +175,7 @@ class TestGatusEntityDeviceInfo:
 
     def test_invalid_sw_version_is_omitted(self) -> None:
         """Invalid integration versions are not exposed as sw_version."""
-        coordinator = _make_coordinator(data=MOCK_ENDPOINT_DATA)
+        coordinator = _make_coordinator(data=MOCK_ENDPOINTS)
         coordinator.config_entry.runtime_data.integration.version = "main"
 
         sensor = _make_sensor(coordinator)
@@ -180,3 +183,90 @@ class TestGatusEntityDeviceInfo:
         assert device_info is not None
 
         assert device_info.get("sw_version") is None
+
+
+class TestGatusResultModel:
+    """Tests for GatusResult dataclass."""
+
+    def test_duration_ms_converts_nanoseconds(self) -> None:
+        """duration_ms correctly converts nanoseconds to milliseconds."""
+        result = GatusResult(
+            success=True,
+            hostname="example.com",
+            status_code=200,
+            duration_ns=75_000_000,
+            timestamp="2026-01-01T00:00:00Z",
+        )
+        assert result.duration_ms == pytest.approx(75.0)
+
+    def test_from_dict_parses_all_fields(self) -> None:
+        """from_dict populates all fields correctly."""
+        data = {
+            "success": True,
+            "hostname": "example.com",
+            "status": 200,
+            "duration": 50_000_000,
+            "timestamp": "2026-01-01T00:00:00Z",
+        }
+        result = GatusResult.from_dict(data)
+        assert result.success is True
+        assert result.hostname == "example.com"
+        assert result.status_code == 200
+        assert result.duration_ns == 50_000_000
+        assert result.duration_ms == pytest.approx(50.0)
+        assert result.timestamp == "2026-01-01T00:00:00Z"
+
+    def test_from_dict_handles_missing_fields(self) -> None:
+        """from_dict uses safe defaults when fields are absent."""
+        result = GatusResult.from_dict({})
+        assert result.success is False
+        assert result.hostname is None
+        assert result.status_code is None
+        assert result.duration_ns == 0
+        assert result.timestamp is None
+
+
+class TestGatusEndpointModel:
+    """Tests for GatusEndpoint dataclass."""
+
+    def test_latest_result_returns_last_entry(self) -> None:
+        """latest_result returns the final item in the results list."""
+        endpoint = GatusEndpoint.from_dict(
+            {
+                "key": "k",
+                "name": "n",
+                "group": "g",
+                "results": [
+                    {
+                        "success": False,
+                        "hostname": None,
+                        "status": 500,
+                        "duration": 0,
+                        "timestamp": None,
+                    },
+                    {
+                        "success": True,
+                        "hostname": "h",
+                        "status": 200,
+                        "duration": 1_000_000,
+                        "timestamp": "t",
+                    },
+                ],
+            }
+        )
+        assert endpoint.latest_result is not None
+        assert endpoint.latest_result.success is True
+
+    def test_latest_result_none_when_empty(self) -> None:
+        """latest_result is None when the results list is empty."""
+        endpoint = GatusEndpoint(key="k", name="n", group="g", results=[])
+        assert endpoint.latest_result is None
+
+    def test_from_dict_parses_nested_results(self) -> None:
+        """from_dict correctly parses nested result objects."""
+        endpoint = GatusEndpoint.from_dict(MOCK_ENDPOINT_DATA[0])
+        assert endpoint.key == "external_google"
+        assert endpoint.name == "google"
+        assert endpoint.group == "external"
+        assert len(endpoint.results) == 1
+        assert endpoint.results[0].hostname == "google.com"

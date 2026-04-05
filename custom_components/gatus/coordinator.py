@@ -12,11 +12,12 @@ from .api import (
     GatusApiClientError,
 )
 from .const import LOGGER
+from .models import GatusEndpoint
 
 if TYPE_CHECKING:
     from .data import GatusConfigEntry
 
-type GatusCoordinatorData = list[dict[str, Any]]
+type GatusCoordinatorData = list[GatusEndpoint]
 
 
 # https://developers.home-assistant.io/docs/integration_fetching_data#coordinated-single-api-poll-for-data-for-all-entities
@@ -30,16 +31,20 @@ class GatusDataUpdateCoordinator(DataUpdateCoordinator[GatusCoordinatorData]):
         Update data via library.
 
         Fetches endpoint statuses from Gatus API.
-        Returns a list of endpoints with their status information.
+        Returns a parsed list of GatusEndpoint objects.
         """
         try:
-            data = await self.config_entry.runtime_data.client.async_get_data()
-            if data and isinstance(data, list):
-                LOGGER.debug("Successfully fetched %d endpoints from Gatus", len(data))
+            raw = await self.config_entry.runtime_data.client.async_get_data()
+            if raw and isinstance(raw, list):
+                endpoints = [GatusEndpoint.from_dict(item) for item in raw]
+                LOGGER.debug(
+                    "Successfully fetched %d endpoints from Gatus", len(endpoints)
+                )
             else:
                 LOGGER.warning(
-                    "Gatus API returned unexpected data format: %s", type(data)
+                    "Gatus API returned unexpected data format: %s", type(raw)
                 )
+                return raw
         except GatusApiClientAuthenticationError as exception:
             LOGGER.error("Authentication failed for Gatus API: %s", exception)
             raise ConfigEntryAuthFailed(exception) from exception
@@ -47,4 +52,4 @@ class GatusDataUpdateCoordinator(DataUpdateCoordinator[GatusCoordinatorData]):
             LOGGER.error("Error fetching data from Gatus API: %s", exception)
             raise UpdateFailed(exception) from exception
         else:
-            return data
+            return endpoints

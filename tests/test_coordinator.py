@@ -13,6 +13,7 @@ from custom_components.gatus.api import (
     GatusApiClientError,
 )
 from custom_components.gatus.coordinator import GatusDataUpdateCoordinator
+from custom_components.gatus.models import GatusEndpoint
 
 from .conftest import MOCK_ENDPOINT_DATA
 
@@ -37,14 +38,35 @@ def _make_coordinator(client: MagicMock) -> GatusDataUpdateCoordinator:
 class TestGatusDataUpdateCoordinator:
     """Tests for GatusDataUpdateCoordinator._async_update_data."""
 
-    async def test_successful_update_returns_data(self) -> None:
-        """Coordinator returns endpoint list on success."""
+    async def test_successful_update_returns_endpoint_objects(self) -> None:
+        """Coordinator parses raw dicts and returns typed GatusEndpoint list."""
         client = MagicMock()
         client.async_get_data = AsyncMock(return_value=MOCK_ENDPOINT_DATA)
 
         coordinator = _make_coordinator(client)
         result = await coordinator._async_update_data()
-        assert result == MOCK_ENDPOINT_DATA
+
+        assert isinstance(result, list)
+        assert len(result) == len(MOCK_ENDPOINT_DATA)
+        assert all(isinstance(ep, GatusEndpoint) for ep in result)
+
+    async def test_parsed_endpoint_matches_raw_data(self) -> None:
+        """Parsed GatusEndpoint values match the source raw dict."""
+        client = MagicMock()
+        client.async_get_data = AsyncMock(return_value=MOCK_ENDPOINT_DATA)
+
+        coordinator = _make_coordinator(client)
+        result = await coordinator._async_update_data()
+
+        first = result[0]
+        assert first.key == "external_google"
+        assert first.name == "google"
+        assert first.group == "external"
+        assert len(first.results) == 1
+        assert first.results[0].success is True
+        assert first.results[0].hostname == "google.com"
+        assert first.results[0].status_code == 200
+        assert first.results[0].duration_ms == pytest.approx(50.0)
 
     async def test_auth_error_raises_config_entry_auth_failed(self) -> None:
         """Authentication error is re-raised as ConfigEntryAuthFailed."""
@@ -68,7 +90,7 @@ class TestGatusDataUpdateCoordinator:
         with pytest.raises(UpdateFailed):
             await coordinator._async_update_data()
 
-    async def test_unexpected_data_format_is_returned(self) -> None:
+    async def test_unexpected_data_format_is_returned_as_is(self) -> None:
         """Non-list responses are returned as-is (coordinator logs a warning)."""
         client = MagicMock()
         client.async_get_data = AsyncMock(return_value={"unexpected": "dict"})
