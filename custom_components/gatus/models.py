@@ -54,7 +54,5 @@ class GatusEndpoint:
             key=data.get("key", ""),
             name=data.get("name", ""),
             group=data.get("group", ""),
-            results=[
-                GatusResult.from_dict(r) for r in data.get("results", [])
-            ],
+            results=[GatusResult.from_dict(r) for r in data.get("results", [])],
         )
