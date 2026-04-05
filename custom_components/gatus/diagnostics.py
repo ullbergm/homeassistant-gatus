@@ -23,8 +23,8 @@ async def async_get_config_entry_diagnostics(
     coordinator = entry.runtime_data.coordinator
 
     endpoint_summary: list[dict[str, Any]] = []
-    if coordinator.data and isinstance(coordinator.data, list):
-        for endpoint in coordinator.data:
+    if coordinator.data and isinstance(coordinator.data, dict):
+        for endpoint in coordinator.data.values():
             latest = endpoint.latest_result
             endpoint_summary.append(
                 {

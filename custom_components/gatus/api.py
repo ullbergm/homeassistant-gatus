@@ -45,7 +45,7 @@ class GatusApiClient:
     ) -> None:
         """Initialize the Gatus API Client."""
         self._url = url
-        self.session = session
+        self._session = session
 
     async def async_get_data(self) -> Any:
         """Get endpoint statuses from the Gatus API."""
@@ -64,7 +64,7 @@ class GatusApiClient:
         """Get information from the API."""
         try:
             async with asyncio.timeout(10):
-                response = await self.session.request(
+                response = await self._session.request(
                     method=method,
                     url=url,
                     headers=headers,

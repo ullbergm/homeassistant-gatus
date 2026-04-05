@@ -32,17 +32,17 @@ async def async_setup_entry(
 
     def _add_new_endpoints() -> None:
         """Add entities for any endpoints not yet registered."""
-        if not coordinator.data or not isinstance(coordinator.data, list):
+        if not coordinator.data or not isinstance(coordinator.data, dict):
             return
 
         new_sensors: list[GatusEndpointBinarySensor] = []
-        for endpoint in coordinator.data:
-            if endpoint.key and endpoint.key not in known_endpoint_keys:
-                known_endpoint_keys.add(endpoint.key)
+        for key, endpoint in coordinator.data.items():
+            if key not in known_endpoint_keys:
+                known_endpoint_keys.add(key)
                 new_sensors.append(
                     GatusEndpointBinarySensor(
                         coordinator=coordinator,
-                        endpoint_key=endpoint.key,
+                        endpoint_key=key,
                         endpoint_name=endpoint.name,
                         endpoint_group=endpoint.group,
                     )
@@ -77,16 +77,11 @@ class GatusEndpointBinarySensor(GatusEntity, BinarySensorEntity):
         # Using has_entity_name=True, so just the endpoint identification
         self._attr_name = f"{endpoint_group} {endpoint_name}"
 
-    def _find_endpoint(self) -> GatusEndpoint | None:
-        """Find this endpoint's typed data in the coordinator data."""
-        if not self.coordinator.data or not isinstance(self.coordinator.data, list):
+    def _get_endpoint(self) -> GatusEndpoint | None:
+        """Return this endpoint's data from the coordinator index (O(1) lookup)."""
+        if not self.coordinator.data or not isinstance(self.coordinator.data, dict):
             return None
-
-        for endpoint in self.coordinator.data:
-            if endpoint.key == self._endpoint_key:
-                return endpoint
-
-        return None
+        return self.coordinator.data.get(self._endpoint_key)
 
     @property
     def available(self) -> bool:
@@ -98,8 +93,8 @@ class GatusEndpointBinarySensor(GatusEntity, BinarySensorEntity):
             )
             return False
 
-        # Check if this specific endpoint exists in the data and has a latest result
-        endpoint = self._find_endpoint()
+        # Check if this specific endpoint exists in the index and has a latest result
+        endpoint = self._get_endpoint()
         if endpoint is None:
             LOGGER.debug(
                 "Entity %s unavailable: endpoint data not found for key %s",
@@ -122,7 +117,7 @@ class GatusEndpointBinarySensor(GatusEntity, BinarySensorEntity):
     @property
     def is_on(self) -> bool:
         """Return true if there is a problem (failure detected)."""
-        endpoint = self._find_endpoint()
+        endpoint = self._get_endpoint()
         if endpoint is None:
             return True  # No data = problem
 
@@ -135,7 +130,7 @@ class GatusEndpointBinarySensor(GatusEntity, BinarySensorEntity):
     @property
     def extra_state_attributes(self) -> dict[str, Any]:
         """Return additional state attributes."""
-        endpoint = self._find_endpoint()
+        endpoint = self._get_endpoint()
         if endpoint is None:
             return {}
 

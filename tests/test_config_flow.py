@@ -26,22 +26,20 @@ class TestGatusFlowHandlerTestCredentials:
         """_test_credentials succeeds when the API returns data."""
         mock_client = MagicMock()
         mock_client.async_get_data = AsyncMock(return_value=MOCK_ENDPOINT_DATA)
+        mock_session = MagicMock()
 
         with (
-            patch("custom_components.gatus.config_flow.aiohttp.TCPConnector"),
             patch(
-                "custom_components.gatus.config_flow.aiohttp.ClientSession"
-            ) as mock_session_cls,
+                "custom_components.gatus.config_flow.async_get_clientsession",
+                return_value=mock_session,
+            ),
             patch(
                 "custom_components.gatus.config_flow.GatusApiClient",
                 return_value=mock_client,
             ),
         ):
-            mock_session = AsyncMock()
-            mock_session.close = AsyncMock()
-            mock_session_cls.return_value = mock_session
-
             flow = GatusFlowHandler()
+            flow.hass = MagicMock()
             # Should not raise
             await flow._test_credentials(url=MOCK_URL)
             mock_client.async_get_data.assert_called_once()
@@ -52,22 +50,20 @@ class TestGatusFlowHandlerTestCredentials:
         mock_client.async_get_data = AsyncMock(
             side_effect=GatusApiClientAuthenticationError("bad creds")
         )
+        mock_session = MagicMock()
 
         with (
-            patch("custom_components.gatus.config_flow.aiohttp.TCPConnector"),
             patch(
-                "custom_components.gatus.config_flow.aiohttp.ClientSession"
-            ) as mock_session_cls,
+                "custom_components.gatus.config_flow.async_get_clientsession",
+                return_value=mock_session,
+            ),
             patch(
                 "custom_components.gatus.config_flow.GatusApiClient",
                 return_value=mock_client,
             ),
         ):
-            mock_session = AsyncMock()
-            mock_session.close = AsyncMock()
-            mock_session_cls.return_value = mock_session
-
             flow = GatusFlowHandler()
+            flow.hass = MagicMock()
             with pytest.raises(GatusApiClientAuthenticationError):
                 await flow._test_credentials(url=MOCK_URL)
 
@@ -77,22 +73,20 @@ class TestGatusFlowHandlerTestCredentials:
         mock_client.async_get_data = AsyncMock(
             side_effect=GatusApiClientCommunicationError("timeout")
         )
+        mock_session = MagicMock()
 
         with (
-            patch("custom_components.gatus.config_flow.aiohttp.TCPConnector"),
             patch(
-                "custom_components.gatus.config_flow.aiohttp.ClientSession"
-            ) as mock_session_cls,
+                "custom_components.gatus.config_flow.async_get_clientsession",
+                return_value=mock_session,
+            ),
             patch(
                 "custom_components.gatus.config_flow.GatusApiClient",
                 return_value=mock_client,
             ),
         ):
-            mock_session = AsyncMock()
-            mock_session.close = AsyncMock()
-            mock_session_cls.return_value = mock_session
-
             flow = GatusFlowHandler()
+            flow.hass = MagicMock()
             with pytest.raises(GatusApiClientCommunicationError):
                 await flow._test_credentials(url=MOCK_URL)
 

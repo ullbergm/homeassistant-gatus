@@ -9,13 +9,13 @@ import pytest
 from custom_components.gatus.binary_sensor import GatusEndpointBinarySensor
 from custom_components.gatus.models import GatusEndpoint, GatusResult
 
-from .conftest import MOCK_ENDPOINT_DATA, MOCK_ENDPOINTS, MOCK_URL
+from .conftest import MOCK_ENDPOINT_DATA, MOCK_ENDPOINTS_DICT, MOCK_URL
 
 
 def _make_coordinator(
-    data: list[GatusEndpoint] | None = None, success: bool = True
+    data: dict[str, GatusEndpoint] | None = None, success: bool = True
 ) -> MagicMock:
-    """Build a minimal mock coordinator with typed endpoint data."""
+    """Build a minimal mock coordinator with dict-keyed endpoint data."""
     coordinator = MagicMock()
     coordinator.data = data
     coordinator.last_update_success = success
@@ -46,13 +46,13 @@ class TestGatusEndpointBinarySensorIsOn:
 
     def test_is_on_false_when_success_true(self) -> None:
         """Sensor reports 'off' (no problem) when latest result is successful."""
-        coordinator = _make_coordinator(data=MOCK_ENDPOINTS)
+        coordinator = _make_coordinator(data=MOCK_ENDPOINTS_DICT)
         sensor = _make_sensor(coordinator)
         assert sensor.is_on is False
 
     def test_is_on_true_when_success_false(self) -> None:
         """Sensor reports 'on' (problem) when latest result is failing."""
-        coordinator = _make_coordinator(data=MOCK_ENDPOINTS)
+        coordinator = _make_coordinator(data=MOCK_ENDPOINTS_DICT)
         sensor = _make_sensor(coordinator, key="media_plex", name="plex", group="media")
         assert sensor.is_on is True
 
@@ -64,16 +64,14 @@ class TestGatusEndpointBinarySensorIsOn:
 
     def test_is_on_true_when_endpoint_not_found(self) -> None:
         """Sensor reports 'on' when its key is missing from coordinator data."""
-        coordinator = _make_coordinator(data=MOCK_ENDPOINTS)
+        coordinator = _make_coordinator(data=MOCK_ENDPOINTS_DICT)
         sensor = _make_sensor(coordinator, key="nonexistent_key")
         assert sensor.is_on is True
 
     def test_is_on_true_when_no_results(self) -> None:
         """Sensor reports 'on' when the endpoint exists but has no results."""
-        data = [
-            GatusEndpoint(key="empty_endpoint", name="empty", group="test", results=[])
-        ]
-        coordinator = _make_coordinator(data=data)
+        ep = GatusEndpoint(key="empty_endpoint", name="empty", group="test", results=[])
+        coordinator = _make_coordinator(data={ep.key: ep})
         sensor = _make_sensor(
             coordinator, key="empty_endpoint", name="empty", group="test"
         )
@@ -85,26 +83,26 @@ class TestGatusEndpointBinarySensorAvailable:
 
     def test_available_when_coordinator_success_and_data_present(self) -> None:
         """Sensor is available when coordinator succeeds and endpoint has results."""
-        coordinator = _make_coordinator(data=MOCK_ENDPOINTS, success=True)
+        coordinator = _make_coordinator(data=MOCK_ENDPOINTS_DICT, success=True)
         sensor = _make_sensor(coordinator)
         assert sensor.available is True
 
     def test_unavailable_when_coordinator_failed(self) -> None:
         """Sensor is unavailable when last_update_success is False."""
-        coordinator = _make_coordinator(data=MOCK_ENDPOINTS, success=False)
+        coordinator = _make_coordinator(data=MOCK_ENDPOINTS_DICT, success=False)
         sensor = _make_sensor(coordinator)
         assert sensor.available is False
 
     def test_unavailable_when_endpoint_missing(self) -> None:
         """Sensor is unavailable when its key is not in coordinator data."""
-        coordinator = _make_coordinator(data=MOCK_ENDPOINTS, success=True)
+        coordinator = _make_coordinator(data=MOCK_ENDPOINTS_DICT, success=True)
         sensor = _make_sensor(coordinator, key="gone_endpoint")
         assert sensor.available is False
 
     def test_unavailable_when_no_results(self) -> None:
         """Sensor is unavailable when the endpoint has an empty results list."""
-        data = [GatusEndpoint(key="no_results", name="x", group="y", results=[])]
-        coordinator = _make_coordinator(data=data, success=True)
+        ep = GatusEndpoint(key="no_results", name="x", group="y", results=[])
+        coordinator = _make_coordinator(data={ep.key: ep}, success=True)
         sensor = _make_sensor(coordinator, key="no_results", name="x", group="y")
         assert sensor.available is False
 
@@ -114,7 +112,7 @@ class TestGatusEndpointBinarySensorAttributes:
 
     def test_attributes_populated_from_latest_result(self) -> None:
         """Attributes reflect the latest result in coordinator data."""
-        coordinator = _make_coordinator(data=MOCK_ENDPOINTS)
+        coordinator = _make_coordinator(data=MOCK_ENDPOINTS_DICT)
         sensor = _make_sensor(coordinator)
         attrs = sensor.extra_state_attributes
         assert attrs["endpoint_group"] == "external"
@@ -132,8 +130,8 @@ class TestGatusEndpointBinarySensorAttributes:
 
     def test_empty_attributes_when_no_results(self) -> None:
         """Attributes are empty when the endpoint has no results."""
-        data = [GatusEndpoint(key="k", name="n", group="g", results=[])]
-        coordinator = _make_coordinator(data=data)
+        ep = GatusEndpoint(key="k", name="n", group="g", results=[])
+        coordinator = _make_coordinator(data={ep.key: ep})
         sensor = _make_sensor(coordinator, key="k", name="n", group="g")
         assert sensor.extra_state_attributes == {}
 
@@ -143,13 +141,13 @@ class TestGatusEndpointBinarySensorUniqueId:
 
     def test_unique_id_combines_entry_id_and_key(self) -> None:
         """Unique ID is entry_id + endpoint key."""
-        coordinator = _make_coordinator(data=MOCK_ENDPOINTS)
+        coordinator = _make_coordinator(data=MOCK_ENDPOINTS_DICT)
         sensor = _make_sensor(coordinator, key="my_endpoint")
         assert sensor.unique_id == "test_entry_id_my_endpoint"
 
     def test_name_combines_group_and_name(self) -> None:
         """Entity name is '{group} {name}'."""
-        coordinator = _make_coordinator(data=MOCK_ENDPOINTS)
+        coordinator = _make_coordinator(data=MOCK_ENDPOINTS_DICT)
         sensor = _make_sensor(coordinator, name="plex", group="media")
         assert sensor.name == "media plex"
 
@@ -164,7 +162,7 @@ class TestGatusEntityDeviceInfo:
             def __str__(self) -> str:
                 return "1.2.3"
 
-        coordinator = _make_coordinator(data=MOCK_ENDPOINTS)
+        coordinator = _make_coordinator(data=MOCK_ENDPOINTS_DICT)
         coordinator.config_entry.runtime_data.integration.version = VersionObject()
 
         sensor = _make_sensor(coordinator)
@@ -175,7 +173,7 @@ class TestGatusEntityDeviceInfo:
 
     def test_invalid_sw_version_is_omitted(self) -> None:
         """Invalid integration versions are not exposed as sw_version."""
-        coordinator = _make_coordinator(data=MOCK_ENDPOINTS)
+        coordinator = _make_coordinator(data=MOCK_ENDPOINTS_DICT)
         coordinator.config_entry.runtime_data.integration.version = "main"
 
         sensor = _make_sensor(coordinator)

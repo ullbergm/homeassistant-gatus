@@ -4,11 +4,11 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-import aiohttp
 import voluptuous as vol
 from homeassistant import config_entries
 from homeassistant.const import CONF_URL
 from homeassistant.helpers import selector
+from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from slugify import slugify
 
 from .api import (
@@ -87,18 +87,9 @@ class GatusFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
 
     async def _test_credentials(self, url: str) -> None:
         """Validate credentials."""
-        # Create connector with threaded resolver to avoid aiodns issues
-        # with Python 3.13
-        connector = aiohttp.TCPConnector(resolver=aiohttp.ThreadedResolver())
-        session = aiohttp.ClientSession(connector=connector)
-        try:
-            client = GatusApiClient(
-                url=url,
-                session=session,
-            )
-            await client.async_get_data()
-        finally:
-            await session.close()
+        session = async_get_clientsession(self.hass)
+        client = GatusApiClient(url=url, session=session)
+        await client.async_get_data()
 
 
 class GatusOptionsFlowHandler(config_entries.OptionsFlow):

@@ -42,8 +42,11 @@ MOCK_ENDPOINT_DATA = [
     },
 ]
 
-# Typed counterpart — used by binary_sensor and coordinator tests.
+# Typed list — used for model-level tests.
 MOCK_ENDPOINTS = [GatusEndpoint.from_dict(d) for d in MOCK_ENDPOINT_DATA]
+
+# Dict-keyed index — matches the shape returned by GatusDataUpdateCoordinator.
+MOCK_ENDPOINTS_DICT: dict[str, GatusEndpoint] = {ep.key: ep for ep in MOCK_ENDPOINTS}
 
 
 @pytest.fixture
@@ -54,8 +57,16 @@ def mock_endpoint_data() -> list[dict]:
 
 @pytest.fixture
 def mock_endpoints() -> list[GatusEndpoint]:
-    """Return mock Gatus endpoint data as typed objects."""
+    """Return mock Gatus endpoint data as typed objects (list)."""
     return [GatusEndpoint.from_dict(d) for d in MOCK_ENDPOINT_DATA]
+
+
+@pytest.fixture
+def mock_endpoints_dict() -> dict[str, GatusEndpoint]:
+    """Return mock Gatus endpoint data as a dict-keyed index (coordinator shape)."""
+    return {
+        ep.key: ep for ep in (GatusEndpoint.from_dict(d) for d in MOCK_ENDPOINT_DATA)
+    }
 
 
 @pytest.fixture

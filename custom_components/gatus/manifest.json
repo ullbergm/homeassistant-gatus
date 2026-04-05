@@ -9,7 +9,6 @@
   "iot_class": "local_polling",
   "issue_tracker": "https://github.com/ullbergm/homeassistant-gatus/issues",
   "requirements": [
-    "aiohttp",
     "python-slugify"
   ],
   "version": "1.0.0"

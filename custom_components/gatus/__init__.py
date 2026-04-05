@@ -10,8 +10,8 @@ from __future__ import annotations
 from datetime import timedelta
 from typing import TYPE_CHECKING
 
-import aiohttp
 from homeassistant.const import CONF_URL, Platform
+from homeassistant.helpers.aiohttp_client import async_create_clientsession
 from homeassistant.loader import async_get_loaded_integration
 
 from .api import GatusApiClient
@@ -42,9 +42,7 @@ async def async_setup_entry(
         name=DOMAIN,
         update_interval=timedelta(seconds=int(scan_interval)),
     )
-    # Create connector with threaded resolver to avoid aiodns issues with Python 3.13
-    connector = aiohttp.TCPConnector(resolver=aiohttp.ThreadedResolver())
-    session = aiohttp.ClientSession(connector=connector)
+    session = async_create_clientsession(hass)
     entry.runtime_data = GatusData(
         client=GatusApiClient(
             url=entry.data[CONF_URL],
@@ -68,8 +66,6 @@ async def async_unload_entry(
     entry: GatusConfigEntry,
 ) -> bool:
     """Handle removal of an entry."""
-    # Close the aiohttp session
-    await entry.runtime_data.client.session.close()
     return await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
 
 

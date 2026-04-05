@@ -38,17 +38,18 @@ def _make_coordinator(client: MagicMock) -> GatusDataUpdateCoordinator:
 class TestGatusDataUpdateCoordinator:
     """Tests for GatusDataUpdateCoordinator._async_update_data."""
 
-    async def test_successful_update_returns_endpoint_objects(self) -> None:
-        """Coordinator parses raw dicts and returns typed GatusEndpoint list."""
+    async def test_successful_update_returns_endpoint_dict(self) -> None:
+        """Coordinator parses raw dicts and returns a dict-keyed GatusEndpoint index."""
         client = MagicMock()
         client.async_get_data = AsyncMock(return_value=MOCK_ENDPOINT_DATA)
 
         coordinator = _make_coordinator(client)
         result = await coordinator._async_update_data()
 
-        assert isinstance(result, list)
+        assert isinstance(result, dict)
         assert len(result) == len(MOCK_ENDPOINT_DATA)
-        assert all(isinstance(ep, GatusEndpoint) for ep in result)
+        assert all(isinstance(ep, GatusEndpoint) for ep in result.values())
+        assert set(result.keys()) == {"external_google", "media_plex"}
 
     async def test_parsed_endpoint_matches_raw_data(self) -> None:
         """Parsed GatusEndpoint values match the source raw dict."""
@@ -58,7 +59,7 @@ class TestGatusDataUpdateCoordinator:
         coordinator = _make_coordinator(client)
         result = await coordinator._async_update_data()
 
-        first = result[0]
+        first = result["external_google"]
         assert first.key == "external_google"
         assert first.name == "google"
         assert first.group == "external"
