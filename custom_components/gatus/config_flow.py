@@ -9,7 +9,7 @@ from homeassistant import config_entries
 from homeassistant.const import CONF_URL
 from homeassistant.helpers import selector
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
-from slugify import slugify
+from homeassistant.util import slugify
 
 from .api import (
     GatusApiClient,
@@ -26,7 +26,7 @@ if TYPE_CHECKING:
 class GatusFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
     """Config flow for Gatus."""
 
-    VERSION = 1
+    VERSION = 2
 
     @staticmethod
     def async_get_options_flow(

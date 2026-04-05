@@ -5,7 +5,9 @@ from __future__ import annotations
 from unittest.mock import AsyncMock, MagicMock, PropertyMock, patch
 
 import pytest
+from homeassistant.const import CONF_URL
 
+from custom_components.gatus import async_migrate_entry
 from custom_components.gatus.api import (
     GatusApiClientAuthenticationError,
     GatusApiClientCommunicationError,
@@ -146,3 +148,53 @@ class TestGatusOptionsFlowHandler:
     def test_default_scan_interval_constant(self) -> None:
         """DEFAULT_SCAN_INTERVAL is 60 seconds."""
         assert DEFAULT_SCAN_INTERVAL == 60
+
+
+class TestGatusFlowHandlerVersion:
+    """Tests for GatusFlowHandler version."""
+
+    def test_config_flow_version_is_2(self) -> None:
+        """Config flow VERSION must be 2 after slugify migration."""
+        assert GatusFlowHandler.VERSION == 2
+
+
+class TestAsyncMigrateEntry:
+    """Tests for async_migrate_entry."""
+
+    async def test_v1_to_v2_rewrites_unique_id_with_underscores(self) -> None:
+        """v1→v2 migration replaces hyphenated unique_id with underscore form."""
+        old_unique_id = "http-gatus-example-com"
+        url = MOCK_URL  # "http://gatus.example.com"
+
+        mock_entry = MagicMock()
+        mock_entry.version = 1
+        mock_entry.unique_id = old_unique_id
+        mock_entry.data = {CONF_URL: url}
+
+        captured: dict = {}
+
+        def _fake_update(_entry, *, unique_id=None, version=None, **__):
+            captured["unique_id"] = unique_id
+            captured["version"] = version
+
+        hass = MagicMock()
+        hass.config_entries.async_update_entry.side_effect = _fake_update
+
+        result = await async_migrate_entry(hass, mock_entry)
+
+        assert result is True
+        assert captured["unique_id"] == "http_gatus_example_com"
+        assert captured["version"] == 2
+
+    async def test_unknown_version_returns_false(self) -> None:
+        """Migration fails gracefully for unrecognised entry versions."""
+        mock_entry = MagicMock()
+        mock_entry.version = 99
+        mock_entry.data = {CONF_URL: MOCK_URL}
+
+        hass = MagicMock()
+
+        result = await async_migrate_entry(hass, mock_entry)
+
+        assert result is False
+        hass.config_entries.async_update_entry.assert_not_called()

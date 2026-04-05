@@ -13,6 +13,7 @@ from typing import TYPE_CHECKING
 from homeassistant.const import CONF_URL, Platform
 from homeassistant.helpers.aiohttp_client import async_create_clientsession
 from homeassistant.loader import async_get_loaded_integration
+from homeassistant.util import slugify
 
 from .api import GatusApiClient
 from .const import CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL, DOMAIN, LOGGER
@@ -75,3 +76,39 @@ async def async_reload_entry(
 ) -> None:
     """Reload config entry."""
     await hass.config_entries.async_reload(entry.entry_id)
+
+
+async def async_migrate_entry(
+    hass: HomeAssistant,
+    entry: GatusConfigEntry,
+) -> bool:
+    """
+    Migrate config entry to the current version.
+
+    v1 → v2: unique_id was generated with python-slugify (hyphens).
+              Re-generate with homeassistant.util.slugify (underscores)
+              so the integration no longer depends on python-slugify.
+    """
+    LOGGER.debug(
+        "Migrating Gatus config entry from version %s to version %s",
+        entry.version,
+        2,
+    )
+
+    if entry.version == 1:
+        url = entry.data.get(CONF_URL, "")
+        new_unique_id = slugify(url)
+        hass.config_entries.async_update_entry(
+            entry,
+            unique_id=new_unique_id,
+            version=2,
+        )
+        LOGGER.info(
+            "Migrated Gatus config entry unique_id from %r to %r",
+            entry.unique_id,
+            new_unique_id,
+        )
+        return True
+
+    LOGGER.error("Unknown Gatus config entry version: %s", entry.version)
+    return False
