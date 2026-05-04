@@ -19,4 +19,4 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: 👤 Assign PR or issue to its author
-        uses: toshimaru/auto-author-assign@v3.0.1
+        uses: toshimaru/auto-author-assign@v3.0.2
