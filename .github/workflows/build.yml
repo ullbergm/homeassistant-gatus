@@ -19,13 +19,13 @@ jobs:
     name: Pre-commit
     steps:
       - name: Check out the repository
-        uses: actions/checkout@v6.0.2
+        uses: actions/checkout@v6.0.3
       - name: Set up Python ${{ env.DEFAULT_PYTHON }}
         uses: actions/setup-python@v6.2.0
         with:
           python-version: ${{ env.DEFAULT_PYTHON }}
       - name: Install uv
-        uses: astral-sh/setup-uv@v8.1.0
+        uses: astral-sh/setup-uv@v8.2.0
         with:
           version: "0.11"
       - name: Install requirements
@@ -40,7 +40,7 @@ jobs:
     name: HACS
     steps:
       - name: Check out the repository
-        uses: "actions/checkout@v6.0.2"
+        uses: "actions/checkout@v6.0.3"
 
       - name: HACS validation
         uses: "hacs/action@22.5.0"
@@ -52,7 +52,7 @@ jobs:
     name: Hassfest
     steps:
       - name: Check out the repository
-        uses: "actions/checkout@v6.0.2"
+        uses: "actions/checkout@v6.0.3"
 
       - name: Hassfest validation
         uses: "home-assistant/actions/hassfest@master"
@@ -62,13 +62,13 @@ jobs:
     name: Run tests
     steps:
       - name: Check out code from GitHub
-        uses: "actions/checkout@v6.0.2"
+        uses: "actions/checkout@v6.0.3"
       - name: Setup Python ${{ env.DEFAULT_PYTHON }}
         uses: "actions/setup-python@v6.2.0"
         with:
           python-version: ${{ env.DEFAULT_PYTHON }}
       - name: Install uv
-        uses: astral-sh/setup-uv@v8.1.0
+        uses: astral-sh/setup-uv@v8.2.0
         with:
           version: "0.11"
       - name: Install requirements
@@ -78,7 +78,7 @@ jobs:
         run: |
           pytest -p no:sugar --cov=custom_components/gatus --cov-report=xml
       - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v6.0.1
+        uses: codecov/codecov-action@v6.0.2
         with:
           env_vars: OS,PYTHON
           verbose: true
