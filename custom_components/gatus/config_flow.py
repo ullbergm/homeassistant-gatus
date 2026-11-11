@@ -27,7 +27,7 @@ _URL_SCHEMA = vol.Schema(
     {
         vol.Required(CONF_URL): selector.TextSelector(
             selector.TextSelectorConfig(
-                type=selector.TextSelectorType.TEXT,
+                type=selector.TextSelectorType.URL,
             ),
         ),
     },
@@ -66,7 +66,8 @@ class GatusFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
 
         return self.async_show_form(
             step_id="user",
-            data_schema=_URL_SCHEMA,
+            # Keep what the user typed when validation fails.
+            data_schema=self.add_suggested_values_to_schema(_URL_SCHEMA, user_input),
             errors=_errors,
         )
 
@@ -117,10 +118,12 @@ class GatusFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
         try:
             await self._test_credentials(url=url)
         except GatusApiClientAuthenticationError as exception:
-            LOGGER.warning(exception)
+            # Expected user-facing failures: the form shows the error, so the
+            # log only needs them at debug level.
+            LOGGER.debug("Gatus rejected the request: %s", exception)
             return url, {"base": "auth"}
         except GatusApiClientCommunicationError as exception:
-            LOGGER.error(exception)
+            LOGGER.debug("Could not reach Gatus: %s", exception)
             return url, {"base": "connection"}
         except GatusApiClientError as exception:
             LOGGER.exception(exception)

@@ -251,9 +251,11 @@ class TestGatusFlowHandlerUserStep:
         mocks = await self._run("gatus.example.com")
 
         mocks["async_create_entry"].assert_not_called()
-        assert mocks["async_show_form"].call_args.kwargs["errors"] == {
-            "base": "invalid_url"
-        }
+        kwargs = mocks["async_show_form"].call_args.kwargs
+        assert kwargs["errors"] == {"base": "invalid_url"}
+        # The rejected value is offered back instead of an empty field.
+        marker = next(iter(kwargs["data_schema"].schema))
+        assert marker.description == {"suggested_value": "gatus.example.com"}
 
 
 class TestGatusFlowHandlerReconfigureStep:

@@ -30,7 +30,7 @@
             "init": {
                 "description": "Configure polling options for Gatus.",
                 "data": {
-                    "scan_interval": "Polling interval (seconds)"
+                    "scan_interval": "Polling interval"
                 }
             }
         }
