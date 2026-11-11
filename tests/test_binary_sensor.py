@@ -155,6 +155,19 @@ class TestGatusEndpointBinarySensorUniqueId:
 class TestGatusEntityDeviceInfo:
     """Tests for base entity device info metadata."""
 
+    def test_name_omits_empty_group(self) -> None:
+        """Ungrouped endpoints (group "") get no leading space in the name."""
+        coordinator = _make_coordinator(data=MOCK_ENDPOINTS_DICT)
+        sensor = _make_sensor(coordinator, key="_solo", name="solo", group="")
+        assert sensor.name == "solo"
+
+    def test_volatile_attributes_are_not_recorded(self) -> None:
+        """Per-check attributes are excluded from the recorder."""
+        assert GatusEndpointBinarySensor._unrecorded_attributes == {
+            "duration_ms",
+            "timestamp",
+        }
+
     def test_sw_version_is_stringified(self) -> None:
         """Integration version objects are normalized to a string."""
 

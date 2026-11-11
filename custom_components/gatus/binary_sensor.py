@@ -9,8 +9,7 @@ from homeassistant.components.binary_sensor import (
     BinarySensorEntity,
 )
 
-from .const import LOGGER
-from .entity import GatusEntity
+from .entity import GatusEndpointEntity, async_track_endpoints
 
 if TYPE_CHECKING:
     from homeassistant.core import HomeAssistant
@@ -18,7 +17,6 @@ if TYPE_CHECKING:
 
     from .coordinator import GatusDataUpdateCoordinator
     from .data import GatusConfigEntry
-    from .models import GatusEndpoint
 
 
 async def async_setup_entry(
@@ -27,38 +25,25 @@ async def async_setup_entry(
     async_add_entities: AddEntitiesCallback,
 ) -> None:
     """Set up the binary_sensor platform."""
-    coordinator = entry.runtime_data.coordinator
-    known_endpoint_keys: set[str] = set()
-
-    def _add_new_endpoints() -> None:
-        """Add entities for any endpoints not yet registered."""
-        if not coordinator.data or not isinstance(coordinator.data, dict):
-            return
-
-        new_sensors: list[GatusEndpointBinarySensor] = []
-        for key, endpoint in coordinator.data.items():
-            if key not in known_endpoint_keys:
-                known_endpoint_keys.add(key)
-                new_sensors.append(
-                    GatusEndpointBinarySensor(
-                        coordinator=coordinator,
-                        endpoint_key=key,
-                        endpoint_name=endpoint.name,
-                        endpoint_group=endpoint.group,
-                    )
-                )
-
-        if new_sensors:
-            async_add_entities(new_sensors)
-
-    # Add initial entities and register a listener for future coordinator updates
-    # so that endpoints added to Gatus after setup are picked up automatically.
-    _add_new_endpoints()
-    entry.async_on_unload(coordinator.async_add_listener(_add_new_endpoints))
+    async_track_endpoints(
+        entry,
+        async_add_entities,
+        lambda coordinator, endpoint: GatusEndpointBinarySensor(
+            coordinator=coordinator,
+            endpoint_key=endpoint.key,
+            endpoint_name=endpoint.name,
+            endpoint_group=endpoint.group,
+        ),
+    )
 
 
-class GatusEndpointBinarySensor(GatusEntity, BinarySensorEntity):
+class GatusEndpointBinarySensor(GatusEndpointEntity, BinarySensorEntity):
     """Gatus endpoint binary sensor class."""
+
+    _attr_device_class = BinarySensorDeviceClass.PROBLEM
+    # These change on every health check; keep them out of the recorder so the
+    # attributes table does not grow with every poll.
+    _unrecorded_attributes = frozenset({"duration_ms", "timestamp"})
 
     def __init__(
         self,
@@ -68,51 +53,10 @@ class GatusEndpointBinarySensor(GatusEntity, BinarySensorEntity):
         endpoint_group: str,
     ) -> None:
         """Initialize the binary_sensor class."""
-        super().__init__(coordinator)
-        self._endpoint_key = endpoint_key
-        self._endpoint_name = endpoint_name
-        self._endpoint_group = endpoint_group
-        self._attr_device_class = BinarySensorDeviceClass.PROBLEM
+        super().__init__(coordinator, endpoint_key, endpoint_name, endpoint_group)
         self._attr_unique_id = f"{coordinator.config_entry.entry_id}_{endpoint_key}"
         # Using has_entity_name=True, so just the endpoint identification
-        self._attr_name = f"{endpoint_group} {endpoint_name}"
-
-    def _get_endpoint(self) -> GatusEndpoint | None:
-        """Return this endpoint's data from the coordinator index (O(1) lookup)."""
-        if not self.coordinator.data or not isinstance(self.coordinator.data, dict):
-            return None
-        return self.coordinator.data.get(self._endpoint_key)
-
-    @property
-    def available(self) -> bool:
-        """Return if entity is available."""
-        # First check if coordinator is available (handles update failures)
-        if not self.coordinator.last_update_success:
-            LOGGER.debug(
-                "Entity %s unavailable: coordinator update failed", self.entity_id
-            )
-            return False
-
-        # Check if this specific endpoint exists in the index and has a latest result
-        endpoint = self._get_endpoint()
-        if endpoint is None:
-            LOGGER.debug(
-                "Entity %s unavailable: endpoint data not found for key %s",
-                self.entity_id,
-                self._endpoint_key,
-            )
-            return False
-
-        if endpoint.latest_result is None:
-            LOGGER.debug(
-                "Entity %s unavailable: no results for endpoint %s",
-                self.entity_id,
-                self._endpoint_key,
-            )
-            return False
-
-        LOGGER.debug("Entity %s is available", self.entity_id)
-        return True
+        self._attr_name = self._endpoint_label
 
     @property
     def is_on(self) -> bool:
