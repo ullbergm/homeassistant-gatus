@@ -51,10 +51,15 @@ class GatusApiClient:
         self._session = session
 
     async def async_get_data(self) -> Any:
-        """Get endpoint statuses from the Gatus API."""
+        """
+        Get endpoint statuses from the Gatus API.
+
+        Only the most recent result per endpoint is requested; by default Gatus
+        returns a page of historical results that the integration never reads.
+        """
         return await self._api_wrapper(
             method="get",
-            url=f"{self._url.rstrip('/')}/api/v1/endpoints/statuses",
+            url=f"{self._url.rstrip('/')}/api/v1/endpoints/statuses?page=1&pageSize=1",
         )
 
     async def _api_wrapper(

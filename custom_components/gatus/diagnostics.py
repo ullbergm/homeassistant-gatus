@@ -12,7 +12,8 @@ if TYPE_CHECKING:
 
     from .data import GatusConfigEntry
 
-_REDACT = {CONF_URL}
+# The entry title is the URL and the unique_id is derived from it.
+_REDACT = {CONF_URL, "title", "unique_id"}
 
 
 async def async_get_config_entry_diagnostics(

@@ -54,7 +54,11 @@ class TestDiagnostics:
 
     async def test_diagnostics_redacts_url_and_summarises_endpoints(self) -> None:
         entry = MagicMock()
-        entry.as_dict.return_value = {"data": {CONF_URL: MOCK_URL}, "title": "x"}
+        entry.as_dict.return_value = {
+            "data": {CONF_URL: MOCK_URL},
+            "title": MOCK_URL,
+            "unique_id": "http_gatus_example_com",
+        }
         coordinator = entry.runtime_data.coordinator
         coordinator.data = MOCK_ENDPOINTS_DICT
         coordinator.last_update_success = True
@@ -63,6 +67,8 @@ class TestDiagnostics:
         result = await async_get_config_entry_diagnostics(MagicMock(), entry)
 
         assert result["config_entry"]["data"][CONF_URL] == "**REDACTED**"
+        assert result["config_entry"]["title"] == "**REDACTED**"
+        assert result["config_entry"]["unique_id"] == "**REDACTED**"
         assert result["coordinator"] == {
             "last_update_success": True,
             "last_exception": None,
