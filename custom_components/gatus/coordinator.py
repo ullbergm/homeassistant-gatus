@@ -2,9 +2,8 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING
 
-from homeassistant.exceptions import ConfigEntryAuthFailed
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 
 from .api import (
@@ -26,34 +25,34 @@ class GatusDataUpdateCoordinator(DataUpdateCoordinator[GatusCoordinatorData]):
 
     config_entry: GatusConfigEntry
 
-    async def _async_update_data(self) -> Any:
+    async def _async_update_data(self) -> GatusCoordinatorData:
         """
-        Update data via library.
+        Fetch endpoint statuses from the Gatus API.
 
-        Fetches endpoint statuses from Gatus API.
-        Returns a parsed list of GatusEndpoint objects.
+        Returns the endpoints indexed by their Gatus key.
         """
         try:
             raw = await self.config_entry.runtime_data.client.async_get_data()
-            if raw and isinstance(raw, list):
-                endpoints = {
-                    ep.key: ep
-                    for item in raw
-                    if (ep := GatusEndpoint.from_dict(item)).key
-                }
-                LOGGER.debug(
-                    "Successfully fetched %d endpoints from Gatus", len(endpoints)
-                )
-            else:
-                LOGGER.warning(
-                    "Gatus API returned unexpected data format: %s", type(raw)
-                )
-                return raw
         except GatusApiClientAuthenticationError as exception:
-            LOGGER.error("Authentication failed for Gatus API: %s", exception)
-            raise ConfigEntryAuthFailed(exception) from exception
+            # The integration has no credentials to re-enter, so this is not a
+            # ConfigEntryAuthFailed (which would start a reauth flow).
+            msg = (
+                "Gatus rejected the request (401/403); this integration only "
+                f"supports instances that do not require authentication: {exception}"
+            )
+            raise UpdateFailed(msg) from exception
         except GatusApiClientError as exception:
-            LOGGER.error("Error fetching data from Gatus API: %s", exception)
             raise UpdateFailed(exception) from exception
-        else:
-            return endpoints  # dict[str, GatusEndpoint]
+
+        if not isinstance(raw, list):
+            msg = f"Gatus API returned unexpected data format: {type(raw).__name__}"
+            raise UpdateFailed(msg)
+
+        endpoints = {
+            endpoint.key: endpoint
+            for item in raw
+            if isinstance(item, dict)
+            and (endpoint := GatusEndpoint.from_dict(item)).key
+        }
+        LOGGER.debug("Successfully fetched %d endpoints from Gatus", len(endpoints))
+        return endpoints
