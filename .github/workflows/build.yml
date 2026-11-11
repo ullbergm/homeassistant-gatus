@@ -15,6 +15,8 @@ permissions:
 
 env:
   DEFAULT_PYTHON: "3.14"
+  # Python version of the oldest Home Assistant release named in hacs.json
+  MIN_HA_PYTHON: "3.13"
 
 jobs:
   pre-commit:
@@ -85,3 +87,26 @@ jobs:
         with:
           env_vars: OS,PYTHON
           verbose: true
+
+  tests-min-ha:
+    runs-on: "ubuntu-latest"
+    name: Run tests (minimum Home Assistant)
+    steps:
+      - name: Check out code from GitHub
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Setup Python ${{ env.MIN_HA_PYTHON }}
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: ${{ env.MIN_HA_PYTHON }}
+      - name: Install uv
+        uses: astral-sh/setup-uv@v10.0.1
+        with:
+          version: "0.12"
+      - name: Install the minimum supported Home Assistant
+        run: |
+          min_ha="$(jq -r '.homeassistant' hacs.json)"
+          echo "Testing against homeassistant==${min_ha}"
+          uv pip install --system "homeassistant==${min_ha}" pytest pytest-asyncio pytest-cov
+      - name: Tests suite
+        run: |
+          pytest -p no:sugar

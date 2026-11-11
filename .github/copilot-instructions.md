@@ -98,7 +98,7 @@ Labels are defined in `.github/labels.yml` and auto-synced on push to `main`. Wh
 
 | Workflow | Trigger | Purpose |
 |---|---|---|
-| `build.yml` | Push to `main`, PRs, daily schedule, manual | Runs pre-commit hooks, HACS validation (`hacs/action`), and hassfest (`home-assistant/actions/hassfest`) |
+| `build.yml` | Push to `main`, PRs, daily schedule, manual | Runs pre-commit hooks, HACS validation (`hacs/action`), hassfest (`home-assistant/actions/hassfest`), and the tests against both the pinned Home Assistant and the minimum version in `hacs.json` |
 | `draft-release.yml` | Push to `main` | Generates changelog via git-cliff, deletes old drafts, creates a new draft release |
 | `release.yml` | Release published | Stamps the tag version into `manifest.json` and uploads `gatus.zip` to the release |
 | `conventional-commits.yml` | PR open/edit/sync | Validates PR title format |
