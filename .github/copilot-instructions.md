@@ -56,7 +56,7 @@ This is a **Home Assistant custom integration** (HACS-compatible) for [Gatus](ht
 - Use `DataUpdateCoordinator` for polling — never poll directly from entities
 - All entities must inherit from `GatusEntity` (which inherits `CoordinatorEntity`)
 - Use `has_entity_name = True` and set `_attr_name` for entity naming
-- Handle `ConfigEntryAuthFailed` for auth errors and `UpdateFailed` for transient failures in the coordinator
+- Raise `UpdateFailed` for all fetch failures in the coordinator. Do not raise `ConfigEntryAuthFailed`: the integration has no credentials and no reauth flow
 - Close aiohttp sessions in `async_unload_entry`
 
 ### Python Style
@@ -85,7 +85,7 @@ Versions are calculated by git-cliff from `.github/cliff.toml` — not from labe
 - `feat!` / `fix!` / any `!` → **major** bump (`breaking_always_bump_major = true`)
 - Everything else → **patch** bump
 - First version defaults to `v0.1.0`; tags are always `v`-prefixed
-- The version in `manifest.json` should be kept in sync with releases
+- `release.yml` stamps the tag version into `manifest.json` inside the `gatus.zip` release asset that HACS installs; the value committed in the repo is only a fallback for manual installs
 
 ### Labels
 
@@ -96,11 +96,10 @@ Labels are defined in `.github/labels.yml` and auto-synced on push to `main`. Wh
 | Workflow | Trigger | Purpose |
 |---|---|---|
 | `build.yml` | Push to `main`, PRs, daily schedule, manual | Runs pre-commit hooks, HACS validation (`hacs/action`), and hassfest (`home-assistant/actions/hassfest`) |
-| `lint.yml` | Push to `main` or PR to `main` | Ruff check + format verification (Python 3.14) |
 | `draft-release.yml` | Push to `main` | Generates changelog via git-cliff, deletes old drafts, creates a new draft release |
+| `release.yml` | Release published | Stamps the tag version into `manifest.json` and uploads `gatus.zip` to the release |
 | `conventional-commits.yml` | PR open/edit/sync | Validates PR title format |
 | `scorecard.yml` | Push to `main`, weekly, manual | OpenSSF Scorecard security analysis (public repos only) |
-| `lighthouse.yml` | PR to `main` (docs/ changed), manual | Lighthouse audit on the docs site |
 | `auto-assign.yml` | PR or issue opened | Auto-assigns author |
 | `codeowners.yml` | Push to `main` (CODEOWNERS changed) + Monday cron | Validates CODEOWNERS syntax |
 | `sync-labels.yml` | Push to `main` (labels.yml changed) | Syncs labels from `.github/labels.yml` |
