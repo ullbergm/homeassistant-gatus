@@ -6,9 +6,9 @@ repos:
       - id: pyupgrade
         args: [--py313-plus]
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.8.4
+    rev: v0.16.3
     hooks:
-      - id: ruff
+      - id: ruff-check
         args: [--fix]
       - id: ruff-format
   - repo: https://github.com/codespell-project/codespell
@@ -32,6 +32,11 @@ repos:
     rev: v1.35.1
     hooks:
       - id: yamllint
+  # .yamllint skips .github/, so workflows are checked here instead.
+  - repo: https://github.com/rhysd/actionlint
+    rev: v1.7.12
+    hooks:
+      - id: actionlint
   - repo: local
     hooks:
       - id: pylint

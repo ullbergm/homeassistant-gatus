@@ -10,8 +10,13 @@ on:
     - cron: "17 6 * * *"
   workflow_dispatch:
 
+permissions:
+  contents: read
+
 env:
   DEFAULT_PYTHON: "3.14"
+  # Python version of the oldest Home Assistant release named in hacs.json
+  MIN_HA_PYTHON: "3.13"
 
 jobs:
   pre-commit:
@@ -19,9 +24,9 @@ jobs:
     name: Pre-commit
     steps:
       - name: Check out the repository
-        uses: actions/checkout@v7.0.1
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Set up Python ${{ env.DEFAULT_PYTHON }}
-        uses: actions/setup-python@v7.1.0
+        uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
         with:
           python-version: ${{ env.DEFAULT_PYTHON }}
       - name: Install uv
@@ -40,7 +45,7 @@ jobs:
     name: HACS
     steps:
       - name: Check out the repository
-        uses: "actions/checkout@v7.0.1"
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: HACS validation
         uses: "hacs/action@22.5.0"
@@ -52,7 +57,7 @@ jobs:
     name: Hassfest
     steps:
       - name: Check out the repository
-        uses: "actions/checkout@v7.0.1"
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Hassfest validation
         uses: "home-assistant/actions/hassfest@master"
@@ -62,9 +67,9 @@ jobs:
     name: Run tests
     steps:
       - name: Check out code from GitHub
-        uses: "actions/checkout@v7.0.1"
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Setup Python ${{ env.DEFAULT_PYTHON }}
-        uses: "actions/setup-python@v7.1.0"
+        uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
         with:
           python-version: ${{ env.DEFAULT_PYTHON }}
       - name: Install uv
@@ -80,5 +85,29 @@ jobs:
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v7.1.1
         with:
-          env_vars: OS,PYTHON
+          # Optional: uploads are tokenless unless this repository secret is set.
+          token: ${{ secrets.CODECOV_TOKEN }}
           verbose: true
+
+  tests-min-ha:
+    runs-on: "ubuntu-latest"
+    name: Run tests (minimum Home Assistant)
+    steps:
+      - name: Check out code from GitHub
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Setup Python ${{ env.MIN_HA_PYTHON }}
+        uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: ${{ env.MIN_HA_PYTHON }}
+      - name: Install uv
+        uses: astral-sh/setup-uv@v10.3.2
+        with:
+          version: "0.13"
+      - name: Install the minimum supported Home Assistant
+        run: |
+          min_ha="$(jq -r '.homeassistant' hacs.json)"
+          echo "Testing against homeassistant==${min_ha}"
+          uv pip install --system "homeassistant==${min_ha}" pytest pytest-asyncio pytest-cov
+      - name: Tests suite
+        run: |
+          pytest -p no:sugar

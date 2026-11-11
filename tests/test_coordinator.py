@@ -5,7 +5,6 @@ from __future__ import annotations
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
-from homeassistant.exceptions import ConfigEntryAuthFailed
 from homeassistant.helpers.update_coordinator import UpdateFailed
 
 from custom_components.gatus.api import (
@@ -69,15 +68,15 @@ class TestGatusDataUpdateCoordinator:
         assert first.results[0].status_code == 200
         assert first.results[0].duration_ms == pytest.approx(50.0)
 
-    async def test_auth_error_raises_config_entry_auth_failed(self) -> None:
-        """Authentication error is re-raised as ConfigEntryAuthFailed."""
+    async def test_auth_error_raises_update_failed(self) -> None:
+        """Auth errors become UpdateFailed: there is no reauth flow to start."""
         client = MagicMock()
         client.async_get_data = AsyncMock(
             side_effect=GatusApiClientAuthenticationError("bad creds")
         )
 
         coordinator = _make_coordinator(client)
-        with pytest.raises(ConfigEntryAuthFailed):
+        with pytest.raises(UpdateFailed, match="401/403"):
             await coordinator._async_update_data()
 
     async def test_api_error_raises_update_failed(self) -> None:
@@ -91,11 +90,36 @@ class TestGatusDataUpdateCoordinator:
         with pytest.raises(UpdateFailed):
             await coordinator._async_update_data()
 
-    async def test_unexpected_data_format_is_returned_as_is(self) -> None:
-        """Non-list responses are returned as-is (coordinator logs a warning)."""
+    async def test_unexpected_data_format_raises_update_failed(self) -> None:
+        """Non-list responses are treated as a failed update."""
         client = MagicMock()
         client.async_get_data = AsyncMock(return_value={"unexpected": "dict"})
 
         coordinator = _make_coordinator(client)
+        with pytest.raises(UpdateFailed, match="unexpected data format"):
+            await coordinator._async_update_data()
+
+    async def test_empty_list_is_a_valid_result(self) -> None:
+        """A Gatus instance with no endpoints yields an empty index."""
+        client = MagicMock()
+        client.async_get_data = AsyncMock(return_value=[])
+
+        coordinator = _make_coordinator(client)
+        assert await coordinator._async_update_data() == {}
+
+    async def test_malformed_items_are_skipped(self) -> None:
+        """Non-dict items, keyless items and null results do not break parsing."""
+        client = MagicMock()
+        client.async_get_data = AsyncMock(
+            return_value=[
+                "garbage",
+                {"name": "no-key"},
+                {"key": "_solo", "name": "solo", "group": "", "results": None},
+            ]
+        )
+
+        coordinator = _make_coordinator(client)
         result = await coordinator._async_update_data()
-        assert result == {"unexpected": "dict"}
+
+        assert set(result) == {"_solo"}
+        assert result["_solo"].results == []

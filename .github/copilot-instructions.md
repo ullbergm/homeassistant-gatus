@@ -2,12 +2,12 @@
 
 ## Project Overview
 
-This is a **Home Assistant custom integration** (HACS-compatible) for [Gatus](https://github.com/TwiN/gatus), a developer-oriented health check and monitoring tool. The integration polls a Gatus instance's API and exposes each monitored endpoint as a **binary sensor** with the `problem` device class in Home Assistant.
+This is a **Home Assistant custom integration** (HACS-compatible) for [Gatus](https://github.com/TwiN/gatus), a developer-oriented health check and monitoring tool. The integration polls a Gatus instance's API and exposes each monitored endpoint as a **binary sensor** with the `problem` device class, plus an opt-in response time **sensor**.
 
 - **Repository**: `ullbergm/homeassistant-gatus`
 - **Domain**: `gatus`
-- **IoT class**: `local_polling` (polls every 60 seconds)
-- **Platforms**: `binary_sensor`
+- **IoT class**: `local_polling` (polls every 60 seconds by default; configurable in the options flow)
+- **Platforms**: `binary_sensor`, `sensor`
 
 ## Architecture
 
@@ -15,23 +15,26 @@ This is a **Home Assistant custom integration** (HACS-compatible) for [Gatus](ht
 
 | File | Purpose |
 |---|---|
-| `__init__.py` | Entry setup/unload; creates the coordinator, API client, and aiohttp session |
-| `api.py` | `GatusApiClient` — wraps the Gatus REST API (`/api/v1/endpoints/statuses`) |
+| `__init__.py` | Entry setup/unload/migration; creates the coordinator and API client using Home Assistant's shared aiohttp session |
+| `api.py` | `GatusApiClient` — wraps the Gatus REST API (`/api/v1/endpoints/statuses?page=1&pageSize=1`, latest result only) |
 | `binary_sensor.py` | `GatusEndpointBinarySensor` — one entity per Gatus endpoint; device class `problem` (on = failing) |
 | `config_flow.py` | `GatusFlowHandler` — UI config flow; accepts a single URL, tests connectivity, sets unique ID from slugified URL |
 | `coordinator.py` | `GatusDataUpdateCoordinator` — standard HA `DataUpdateCoordinator`; fetches all endpoint statuses |
-| `const.py` | Constants: `DOMAIN`, `LOGGER`, `ATTRIBUTION` |
+| `const.py` | Constants: `DOMAIN`, `LOGGER`, `ATTRIBUTION`, scan interval option |
+| `diagnostics.py` | Config entry diagnostics; redacts the URL, entry title and unique ID |
+| `models.py` | `GatusEndpoint` / `GatusResult` dataclasses parsed from the API response |
+| `sensor.py` | `GatusEndpointResponseTimeSensor` — response time per endpoint, disabled by default |
 | `data.py` | `GatusData` dataclass and `GatusConfigEntry` type alias for runtime data |
-| `entity.py` | `GatusEntity` base class — sets device info, attribution, and `has_entity_name = True` |
+| `entity.py` | `GatusEntity` (device info, attribution, `has_entity_name = True`), `GatusEndpointEntity` (per-endpoint lookup and availability) and `async_track_endpoints` (adds/removes entities as endpoints change) |
 | `manifest.json` | Integration manifest (domain, version, requirements, codeowners) |
 | `translations/en.json` | UI strings for the config flow |
 
 ### Key Data Flow
 
 1. User adds integration via UI → `config_flow.py` validates the Gatus URL
-2. `__init__.py` creates an `aiohttp.ClientSession` (with `ThreadedResolver` for Python 3.13 compatibility), `GatusApiClient`, and `GatusDataUpdateCoordinator`
-3. Coordinator calls `GET {url}/api/v1/endpoints/statuses` every 60 seconds
-4. `binary_sensor.py` creates one `GatusEndpointBinarySensor` per endpoint in the response
+2. `__init__.py` creates the `GatusApiClient` (on Home Assistant's shared aiohttp session) and the `GatusDataUpdateCoordinator`
+3. Coordinator calls `GET {url}/api/v1/endpoints/statuses?page=1&pageSize=1` at the configured interval (default 60 seconds) and indexes the endpoints by key
+4. Each platform calls `async_track_endpoints`, which creates one entity per endpoint and removes entities for endpoints that disappear (registry entries are kept)
 5. Each sensor's `is_on` checks the latest result's `success` field (on = problem/failure)
 6. Extra attributes: `endpoint_group`, `endpoint_name`, `hostname`, `status_code`, `duration_ms`, `timestamp`
 
@@ -40,24 +43,24 @@ This is a **Home Assistant custom integration** (HACS-compatible) for [Gatus](ht
 | File | Purpose |
 |---|---|
 | `config/configuration.yaml` | Local dev HA config (debug logging for `custom_components.gatus`) |
-| `scripts/setup` | Install Python dependencies (`requirements.txt`) |
+| `scripts/setup` | Install Python dependencies (`requirements_dev.txt`) |
 | `scripts/develop` | Start a local HA instance with the integration loaded via `PYTHONPATH` |
 | `scripts/lint` | Run `ruff format` + `ruff check --fix` locally |
 | `hacs.json` | HACS metadata (name, minimum HA/HACS versions) |
 | `requirements.txt` | Runtime deps: `pip`, `ruff`, `homeassistant` |
-| `requirements_dev.txt` | Dev deps: adds `pre-commit`, `pylint`, `mypy` |
+| `requirements_dev.txt` | Dev deps: adds `pre-commit`, `pylint`, `mypy`, `pytest` and plugins |
 
 ## Conventions
 
 ### Home Assistant Integration Patterns
 
 - Follow the [HA developer docs](https://developers.home-assistant.io/) for all integration patterns
-- Use `ConfigEntry.runtime_data` (typed via `GatusConfigEntry`) to store the API client, coordinator, and integration reference
+- Use `ConfigEntry.runtime_data` (typed via `GatusConfigEntry`) to store the API client and coordinator
 - Use `DataUpdateCoordinator` for polling — never poll directly from entities
-- All entities must inherit from `GatusEntity` (which inherits `CoordinatorEntity`)
+- All entities must inherit from `GatusEntity` (which inherits `CoordinatorEntity`); per-endpoint entities inherit from `GatusEndpointEntity`
 - Use `has_entity_name = True` and set `_attr_name` for entity naming
-- Handle `ConfigEntryAuthFailed` for auth errors and `UpdateFailed` for transient failures in the coordinator
-- Close aiohttp sessions in `async_unload_entry`
+- Raise `UpdateFailed` for all fetch failures in the coordinator. Do not raise `ConfigEntryAuthFailed`: the integration has no credentials and no reauth flow
+- Use `async_get_clientsession(hass)`; never create or close aiohttp sessions in the integration
 
 ### Python Style
 
@@ -85,7 +88,7 @@ Versions are calculated by git-cliff from `.github/cliff.toml` — not from labe
 - `feat!` / `fix!` / any `!` → **major** bump (`breaking_always_bump_major = true`)
 - Everything else → **patch** bump
 - First version defaults to `v0.1.0`; tags are always `v`-prefixed
-- The version in `manifest.json` should be kept in sync with releases
+- `release.yml` stamps the tag version into `manifest.json` inside the `gatus.zip` release asset that HACS installs; the value committed in the repo is only a fallback for manual installs
 
 ### Labels
 
@@ -95,21 +98,20 @@ Labels are defined in `.github/labels.yml` and auto-synced on push to `main`. Wh
 
 | Workflow | Trigger | Purpose |
 |---|---|---|
-| `build.yml` | Push to `main`, PRs, daily schedule, manual | Runs pre-commit hooks, HACS validation (`hacs/action`), and hassfest (`home-assistant/actions/hassfest`) |
-| `lint.yml` | Push to `main` or PR to `main` | Ruff check + format verification (Python 3.14) |
+| `build.yml` | Push to `main`, PRs, daily schedule, manual | Runs pre-commit hooks, HACS validation (`hacs/action`), hassfest (`home-assistant/actions/hassfest`), and the tests against both the pinned Home Assistant and the minimum version in `hacs.json` |
 | `draft-release.yml` | Push to `main` | Generates changelog via git-cliff, deletes old drafts, creates a new draft release |
+| `release.yml` | Release published | Stamps the tag version into `manifest.json` and uploads `gatus.zip` to the release |
 | `conventional-commits.yml` | PR open/edit/sync | Validates PR title format |
 | `scorecard.yml` | Push to `main`, weekly, manual | OpenSSF Scorecard security analysis (public repos only) |
-| `lighthouse.yml` | PR to `main` (docs/ changed), manual | Lighthouse audit on the docs site |
 | `auto-assign.yml` | PR or issue opened | Auto-assigns author |
 | `codeowners.yml` | Push to `main` (CODEOWNERS changed) + Monday cron | Validates CODEOWNERS syntax |
 | `sync-labels.yml` | Push to `main` (labels.yml changed) | Syncs labels from `.github/labels.yml` |
-| `stale.yml` | Daily cron (09:00 UTC) | Marks issues stale after 30d, PRs after 14d; closes after 7d more |
+| `stale.yml` | Daily cron (04:04 UTC) | Marks issues stale after 30d, PRs after 14d; closes after 3d more |
 | `lock.yml` | Daily cron (09:00 UTC) | Locks closed issues after 30d, closed PRs after 7d |
 
 ### Stale Exemptions
 
-Issues with labels `pinned`, `security`, `help wanted`, or `good first issue` are exempt. PRs with `pinned`, `security`, or `dependencies` are exempt.
+Issues with labels `pinned`, `security`, `help wanted`, `pending`, or `good first issue` are exempt. PRs with `pinned`, `security`, or `dependencies` are exempt.
 
 ## Development
 
@@ -127,8 +129,8 @@ The `scripts/develop` script sets `PYTHONPATH` so `custom_components/gatus` is p
 
 1. Create `custom_components/gatus/<platform>.py` (e.g., `sensor.py`)
 2. Add the platform to `PLATFORMS` in `__init__.py`
-3. Implement `async_setup_entry` to create entities from `coordinator.data`
-4. Have entities inherit from `GatusEntity`
+3. Implement `async_setup_entry` by calling `async_track_endpoints` with an entity factory
+4. Have per-endpoint entities inherit from `GatusEndpointEntity`
 5. Add any new translation keys to `translations/en.json`
 
 ### Adding New Entity Attributes or Sensors
@@ -139,6 +141,6 @@ The `scripts/develop` script sets `PYTHONPATH` so `custom_components/gatus` is p
 
 ### Modifying CI/CD
 
-- **Adding a workflow**: Place in `.github/workflows/`, use minimal `permissions`, and prefer pinned action versions (`@v4` not `@main`)
+- **Adding a workflow**: Place in `.github/workflows/`, use minimal `permissions`, and pin actions to a commit SHA with the version in a trailing comment (Renovate keeps them updated)
 - **Changing changelog format**: Edit `.github/cliff.toml` — the `commit_parsers` array maps commit prefixes to changelog sections with emoji headers
 - **Editing labels**: Only edit `.github/labels.yml` — the sync workflow handles the rest

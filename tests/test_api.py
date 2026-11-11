@@ -41,6 +41,14 @@ class TestVerifyResponseOrRaise:
         with pytest.raises(GatusApiClientAuthenticationError):
             _verify_response_or_raise(response)
 
+    def test_auth_error_releases_connection(self) -> None:
+        """The connection is released before the auth error is raised."""
+        response = MagicMock()
+        response.status = 401
+        with pytest.raises(GatusApiClientAuthenticationError):
+            _verify_response_or_raise(response)
+        response.release.assert_called_once()
+
     def test_403_raises_auth_error(self) -> None:
         """Test that 403 raises GatusApiClientAuthenticationError."""
         response = MagicMock()
@@ -79,7 +87,7 @@ class TestGatusApiClient:
         assert result == payload
         mock_session.request.assert_called_once_with(
             method="get",
-            url="http://localhost:8080/api/v1/endpoints/statuses",
+            url="http://localhost:8080/api/v1/endpoints/statuses?page=1&pageSize=1",
             headers=None,
             json=None,
         )
@@ -91,7 +99,9 @@ class TestGatusApiClient:
         client = GatusApiClient(url="http://localhost:8080/", session=mock_session)
         await client.async_get_data()
         _, kwargs = mock_session.request.call_args
-        assert kwargs["url"] == "http://localhost:8080/api/v1/endpoints/statuses"
+        assert kwargs["url"] == (
+            "http://localhost:8080/api/v1/endpoints/statuses?page=1&pageSize=1"
+        )
 
     async def test_authentication_error(self, mock_session: MagicMock) -> None:
         """Test that 401 response raises GatusApiClientAuthenticationError."""

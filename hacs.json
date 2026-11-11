@@ -1,5 +1,7 @@
 {
     "name": "Gatus",
-    "homeassistant": "2026.8.2",
-    "hacs": "2.0.5"
+    "homeassistant": "2025.2.0",
+    "hacs": "2.0.5",
+    "zip_release": true,
+    "filename": "gatus.zip"
 }

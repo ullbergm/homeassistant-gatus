@@ -23,6 +23,17 @@ if TYPE_CHECKING:
     from .data import GatusConfigEntry
 
 
+_URL_SCHEMA = vol.Schema(
+    {
+        vol.Required(CONF_URL): selector.TextSelector(
+            selector.TextSelectorConfig(
+                type=selector.TextSelectorType.URL,
+            ),
+        ),
+    },
+)
+
+
 class GatusFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
     """Config flow for Gatus."""
 
@@ -40,50 +51,84 @@ class GatusFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
         user_input: dict | None = None,
     ) -> config_entries.ConfigFlowResult:
         """Handle a flow initialized by the user."""
-        _errors = {}
+        _errors: dict[str, str] = {}
         if user_input is not None:
-            url = user_input[CONF_URL].strip()
-            if not url.startswith(("http://", "https://")):
-                _errors["base"] = "invalid_url"
-            else:
-                user_input = {**user_input, CONF_URL: url}
+            url, _errors = await self._async_validate_url(user_input[CONF_URL])
             if not _errors:
-                try:
-                    await self._test_credentials(
-                        url=url,
-                    )
-                except GatusApiClientAuthenticationError as exception:
-                    LOGGER.warning(exception)
-                    _errors["base"] = "auth"
-                except GatusApiClientCommunicationError as exception:
-                    LOGGER.error(exception)
-                    _errors["base"] = "connection"
-                except GatusApiClientError as exception:
-                    LOGGER.exception(exception)
-                    _errors["base"] = "unknown"
-                else:
-                    # Slugified URL is stable as long as the user doesn't change
-                    # the Gatus server URL, which would be a reconfiguration anyway.
-                    await self.async_set_unique_id(slugify(url))
-                    self._abort_if_unique_id_configured()
-                    return self.async_create_entry(
-                        title=url,
-                        data=user_input,
-                    )
+                # Slugified URL is stable as long as the user doesn't change
+                # the Gatus server URL, which would be a reconfiguration anyway.
+                await self.async_set_unique_id(slugify(url))
+                self._abort_if_unique_id_configured()
+                return self.async_create_entry(
+                    title=url,
+                    data={**user_input, CONF_URL: url},
+                )
 
         return self.async_show_form(
             step_id="user",
-            data_schema=vol.Schema(
-                {
-                    vol.Required(CONF_URL): selector.TextSelector(
-                        selector.TextSelectorConfig(
-                            type=selector.TextSelectorType.TEXT,
-                        ),
-                    ),
-                },
+            # Keep what the user typed when validation fails.
+            data_schema=self.add_suggested_values_to_schema(_URL_SCHEMA, user_input),
+            errors=_errors,
+        )
+
+    async def async_step_reconfigure(
+        self,
+        user_input: dict | None = None,
+    ) -> config_entries.ConfigFlowResult:
+        """Let the user point an existing entry at a new Gatus URL."""
+        entry = self._get_reconfigure_entry()
+        _errors: dict[str, str] = {}
+        if user_input is not None:
+            url, _errors = await self._async_validate_url(user_input[CONF_URL])
+            if not _errors:
+                unique_id = slugify(url)
+                if any(
+                    other.unique_id == unique_id and other.entry_id != entry.entry_id
+                    for other in self._async_current_entries()
+                ):
+                    return self.async_abort(reason="already_configured")
+                # Entities are keyed on the entry ID, so they (and any user
+                # customisations) survive the URL change. The entry's update
+                # listener reloads it, so async_update_reload_and_abort (which
+                # would schedule a second reload) is deliberately not used.
+                self.hass.config_entries.async_update_entry(
+                    entry,
+                    unique_id=unique_id,
+                    title=url,
+                    data={**entry.data, CONF_URL: url},
+                )
+                return self.async_abort(reason="reconfigure_successful")
+
+        return self.async_show_form(
+            step_id="reconfigure",
+            data_schema=self.add_suggested_values_to_schema(
+                _URL_SCHEMA,
+                user_input or {CONF_URL: entry.data.get(CONF_URL, "")},
             ),
             errors=_errors,
         )
+
+    async def _async_validate_url(self, raw_url: str) -> tuple[str, dict[str, str]]:
+        """Normalise the URL and check that Gatus answers on it."""
+        # Drop trailing slashes so "http://host" and "http://host/" map to
+        # the same unique_id and cannot be configured twice.
+        url = raw_url.strip().rstrip("/")
+        if not url.startswith(("http://", "https://")):
+            return url, {"base": "invalid_url"}
+        try:
+            await self._test_credentials(url=url)
+        except GatusApiClientAuthenticationError as exception:
+            # Expected user-facing failures: the form shows the error, so the
+            # log only needs them at debug level.
+            LOGGER.debug("Gatus rejected the request: %s", exception)
+            return url, {"base": "auth"}
+        except GatusApiClientCommunicationError as exception:
+            LOGGER.debug("Could not reach Gatus: %s", exception)
+            return url, {"base": "connection"}
+        except GatusApiClientError as exception:
+            LOGGER.exception(exception)
+            return url, {"base": "unknown"}
+        return url, {}
 
     async def _test_credentials(self, url: str) -> None:
         """Validate credentials."""

@@ -6,6 +6,12 @@
                 "data": {
                     "url": "URL"
                 }
+            },
+            "reconfigure": {
+                "description": "Change the URL of your Gatus server. Existing entities are kept.",
+                "data": {
+                    "url": "URL"
+                }
             }
         },
         "error": {
@@ -15,7 +21,8 @@
             "unknown": "Unknown error occurred."
         },
         "abort": {
-            "already_configured": "This entry is already configured."
+            "already_configured": "This entry is already configured.",
+            "reconfigure_successful": "The Gatus URL was updated."
         }
     },
     "options": {
@@ -23,7 +30,7 @@
             "init": {
                 "description": "Configure polling options for Gatus.",
                 "data": {
-                    "scan_interval": "Polling interval (seconds)"
+                    "scan_interval": "Polling interval"
                 }
             }
         }

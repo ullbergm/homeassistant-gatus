@@ -25,16 +25,14 @@ jobs:
           issue-lock-reason: ""
           exclude-any-issue-labels: "automatic-issue"
           issue-comment: >
-            Issue closed and locked due to lack of activity.
+            This issue has been closed for 30 days and is now locked.
 
-            If you encounter this same issue, please open a new issue and refer
-            to this closed one.
+            If you encounter the same problem, please open a new issue and
+            refer to this one.
           pr-inactive-days: "7"
           pr-lock-reason: ""
           pr-comment: >
-            Pull Request closed and locked due to lack of activity.
+            This pull request has been closed for 7 days and is now locked.
 
-            If you'd like to build on this closed PR, you can clone it using
-            this method: https://stackoverflow.com/a/14969986
-
-            Then open a new PR, referencing this closed PR in your message.
+            To follow up, please open a new issue or pull request that
+            references this one.

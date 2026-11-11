@@ -28,7 +28,7 @@ class GatusResult:
             success=data.get("success", False),
             hostname=data.get("hostname"),
             status_code=data.get("status"),
-            duration_ns=data.get("duration", 0),
+            duration_ns=data.get("duration") or 0,
             timestamp=data.get("timestamp"),
         )
 
@@ -51,8 +51,12 @@ class GatusEndpoint:
     def from_dict(cls, data: dict[str, Any]) -> GatusEndpoint:
         """Construct a GatusEndpoint from a raw API response dict."""
         return cls(
-            key=data.get("key", ""),
-            name=data.get("name", ""),
-            group=data.get("group", ""),
-            results=[GatusResult.from_dict(r) for r in data.get("results", [])],
+            key=data.get("key") or "",
+            name=data.get("name") or "",
+            group=data.get("group") or "",
+            results=[
+                GatusResult.from_dict(r)
+                for r in data.get("results") or []
+                if isinstance(r, dict)
+            ],
         )

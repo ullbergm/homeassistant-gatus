@@ -16,8 +16,9 @@ Pull requests are the best way to propose changes to the codebase.
 1. Fork the repo and create your branch from `main`.
 2. If you've changed something, update the documentation.
 3. Make sure your code lints (using `scripts/lint`).
-4. Test you contribution.
-5. Issue that pull request!
+4. Run the tests with `pytest` and add tests for what you changed.
+5. Give the pull request a [Conventional Commits](https://www.conventionalcommits.org/) title, e.g. `fix: handle empty groups`. The subject must start with a lowercase letter; CI checks this.
+6. Issue that pull request!
 
 ## Any contributions you make will be under the MIT Software License
 
@@ -45,6 +46,14 @@ People *love* thorough bug reports. I'm not even kidding.
 ## Use a Consistent Coding Style
 
 Use [ruff](https://github.com/astral-sh/ruff) to format and lint the code. Run `scripts/lint` to auto-fix issues.
+
+The full set of checks CI runs (ruff, codespell, yamllint, actionlint, pylint, mypy) is available locally through [pre-commit](https://pre-commit.com/):
+
+```bash
+pip install -r requirements_dev.txt
+pre-commit install --hook-type pre-commit --hook-type commit-msg
+pre-commit run --all-files
+```
 
 ## Test your code modification
 

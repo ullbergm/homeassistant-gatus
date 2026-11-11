@@ -28,6 +28,9 @@ class GatusApiClientAuthenticationError(
 def _verify_response_or_raise(response: aiohttp.ClientResponse) -> None:
     """Verify that the response is valid."""
     if response.status in (401, 403):
+        # raise_for_status() releases the connection itself; do the same here
+        # so the auth path does not hold it until garbage collection.
+        response.release()
         msg = "Invalid credentials"
         raise GatusApiClientAuthenticationError(
             msg,
@@ -48,10 +51,15 @@ class GatusApiClient:
         self._session = session
 
     async def async_get_data(self) -> Any:
-        """Get endpoint statuses from the Gatus API."""
+        """
+        Get endpoint statuses from the Gatus API.
+
+        Only the most recent result per endpoint is requested; by default Gatus
+        returns a page of historical results that the integration never reads.
+        """
         return await self._api_wrapper(
             method="get",
-            url=f"{self._url.rstrip('/')}/api/v1/endpoints/statuses",
+            url=f"{self._url.rstrip('/')}/api/v1/endpoints/statuses?page=1&pageSize=1",
         )
 
     async def _api_wrapper(
