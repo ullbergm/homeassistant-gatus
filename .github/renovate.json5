@@ -6,23 +6,14 @@
   dependencyDashboard: true,
   prConcurrentLimit: 5,
   prHourlyLimit: 2,
-  pinDigests: false,
+  pinDigests: true,
   semanticCommits: "enabled",
   semanticCommitType: "chore",
   semanticCommitScope: "deps",
-  customManagers: [
-    {
-      customType: "regex",
-      datasourceTemplate: "pypi",
-      description: "Process HACS dependencies",
-      managerFilePatterns: ["**/hacs.json"],
-      depNameTemplate: "homeassistant",
-      versioningTemplate: "pep440",
-      matchStrings: [
-        '"homeassistant":\\s*"(?<currentValue>[^"]+)"'
-      ],
-    },
-  ],
+  // Keep the ruff hook in .pre-commit-config.yaml in step with requirements.txt
+  "pre-commit": {
+    enabled: true,
+  },
   packageRules: [
     {
       // Group all non-major updates across all ecosystems into a single PR
@@ -41,38 +32,6 @@
       automergeSchedule: ["on monday"],
     },
     {
-      // Group all Kubernetes and Helm updates
-      matchManagers: [
-        "kubernetes",
-        "helm-values",
-        "helmfile",
-        "helm-requirements",
-      ],
-      groupName: "Kubernetes & Helm",
-      groupSlug: "k8s-helm",
-    },
-    {
-      // Group all Go major updates
-      matchManagers: ["gomod"],
-      matchUpdateTypes: ["major"],
-      groupName: "Go major updates",
-      groupSlug: "go-major",
-    },
-    {
-      // Group all npm major updates
-      matchManagers: ["npm"],
-      matchUpdateTypes: ["major"],
-      groupName: "npm major updates",
-      groupSlug: "npm-major",
-    },
-    {
-      // Group all Maven major updates
-      matchManagers: ["maven"],
-      matchUpdateTypes: ["major"],
-      groupName: "Maven major updates",
-      groupSlug: "maven-major",
-    },
-    {
       // Group all Python major updates
       matchManagers: [
         "pip_requirements",
@@ -80,7 +39,6 @@
         "pipenv",
         "poetry",
         "pep621",
-        "custom.regex",
       ],
       matchUpdateTypes: ["major"],
       groupName: "Python major updates",
