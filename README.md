@@ -101,6 +101,10 @@ Or manually: open **HACS**, choose **Custom repositories** from the menu, add `h
 4. Enter your Gatus URL (e.g. `https://gatus.example.com`)
 5. The integration discovers all endpoints from your Gatus instance
 
+### Changing the URL
+
+If your Gatus server moves, open the integration, choose **Reconfigure** from the menu and enter the new URL. Your entities and their customisations are kept.
+
 ### Polling interval
 
 Gatus is polled every 60 seconds by default. To change this, open the integration and choose **Configure**; the interval can be set between 10 and 3600 seconds.
