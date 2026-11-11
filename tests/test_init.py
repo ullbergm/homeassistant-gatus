@@ -29,7 +29,6 @@ class TestAsyncSetupEntry:
                 "custom_components.gatus.GatusDataUpdateCoordinator"
             ) as coordinator_cls,
             patch("custom_components.gatus.async_get_clientsession") as get_session,
-            patch("custom_components.gatus.async_get_loaded_integration"),
         ):
             coordinator_cls.return_value.async_config_entry_first_refresh = AsyncMock()
             assert await async_setup_entry(hass, entry) is True

@@ -55,7 +55,7 @@ This is a **Home Assistant custom integration** (HACS-compatible) for [Gatus](ht
 ### Home Assistant Integration Patterns
 
 - Follow the [HA developer docs](https://developers.home-assistant.io/) for all integration patterns
-- Use `ConfigEntry.runtime_data` (typed via `GatusConfigEntry`) to store the API client, coordinator, and integration reference
+- Use `ConfigEntry.runtime_data` (typed via `GatusConfigEntry`) to store the API client and coordinator
 - Use `DataUpdateCoordinator` for polling — never poll directly from entities
 - All entities must inherit from `GatusEntity` (which inherits `CoordinatorEntity`); per-endpoint entities inherit from `GatusEndpointEntity`
 - Use `has_entity_name = True` and set `_attr_name` for entity naming

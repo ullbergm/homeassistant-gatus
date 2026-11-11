@@ -5,6 +5,7 @@ from __future__ import annotations
 from unittest.mock import MagicMock
 
 import pytest
+from homeassistant.helpers.device_registry import DeviceEntryType
 
 from custom_components.gatus.binary_sensor import GatusEndpointBinarySensor
 from custom_components.gatus.models import GatusEndpoint, GatusResult
@@ -21,8 +22,6 @@ def _make_coordinator(
     coordinator.last_update_success = success
     coordinator.config_entry.entry_id = "test_entry_id"
     coordinator.config_entry.data = {"url": MOCK_URL}
-    # runtime_data.integration is accessed in entity.py for sw_version
-    coordinator.config_entry.runtime_data.integration.version = "1.0.0"
     return coordinator
 
 
@@ -168,32 +167,15 @@ class TestGatusEntityDeviceInfo:
             "timestamp",
         }
 
-    def test_sw_version_is_stringified(self) -> None:
-        """Integration version objects are normalized to a string."""
-
-        class VersionObject:
-            def __str__(self) -> str:
-                return "1.2.3"
-
-        coordinator = _make_coordinator(data=MOCK_ENDPOINTS_DICT)
-        coordinator.config_entry.runtime_data.integration.version = VersionObject()
-
-        sensor = _make_sensor(coordinator)
+    def test_device_is_a_service_without_sw_version(self) -> None:
+        """The device is a service entry and clears any stale sw_version."""
+        sensor = _make_sensor(_make_coordinator(data=MOCK_ENDPOINTS_DICT))
         device_info = sensor.device_info
         assert device_info is not None
 
-        assert device_info["sw_version"] == "1.2.3"
-
-    def test_invalid_sw_version_is_omitted(self) -> None:
-        """Invalid integration versions are not exposed as sw_version."""
-        coordinator = _make_coordinator(data=MOCK_ENDPOINTS_DICT)
-        coordinator.config_entry.runtime_data.integration.version = "main"
-
-        sensor = _make_sensor(coordinator)
-        device_info = sensor.device_info
-        assert device_info is not None
-
-        assert device_info.get("sw_version") is None
+        assert device_info["entry_type"] is DeviceEntryType.SERVICE
+        assert device_info["sw_version"] is None
+        assert device_info["name"] == "Gatus (gatus.example.com)"
 
 
 class TestGatusResultModel:

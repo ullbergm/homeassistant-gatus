@@ -12,7 +12,6 @@ from typing import TYPE_CHECKING
 
 from homeassistant.const import CONF_URL, Platform
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
-from homeassistant.loader import async_get_loaded_integration
 from homeassistant.util import slugify
 
 from .api import GatusApiClient
@@ -50,7 +49,6 @@ async def async_setup_entry(
             url=entry.data[CONF_URL],
             session=async_get_clientsession(hass),
         ),
-        integration=async_get_loaded_integration(hass, entry.domain),
         coordinator=coordinator,
     )
 

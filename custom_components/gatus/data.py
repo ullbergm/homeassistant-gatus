@@ -7,7 +7,6 @@ from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from homeassistant.config_entries import ConfigEntry
-    from homeassistant.loader import Integration
 
     from .api import GatusApiClient
     from .coordinator import GatusDataUpdateCoordinator
@@ -22,4 +21,3 @@ class GatusData:
 
     client: GatusApiClient
     coordinator: GatusDataUpdateCoordinator
-    integration: Integration

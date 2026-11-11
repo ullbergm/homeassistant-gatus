@@ -23,7 +23,6 @@ def _make_entry(data: dict[str, GatusEndpoint]) -> MagicMock:
     coordinator.last_update_success = True
     coordinator.config_entry.entry_id = "test_entry_id"
     coordinator.config_entry.data = {"url": MOCK_URL}
-    coordinator.config_entry.runtime_data.integration.version = "1.0.0"
     return entry
 
 
