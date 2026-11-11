@@ -186,6 +186,27 @@ class TestAsyncMigrateEntry:
         assert captured["unique_id"] == "http_gatus_example_com"
         assert captured["version"] == 2
 
+    async def test_migration_logs_old_and_new_unique_id(self) -> None:
+        """The log line reports the pre-migration unique_id, not the new one."""
+        mock_entry = MagicMock()
+        mock_entry.version = 1
+        mock_entry.unique_id = "http-gatus-example-com"
+        mock_entry.data = {CONF_URL: MOCK_URL}
+
+        def _fake_update(entry, *, unique_id=None, **__):
+            entry.unique_id = unique_id
+
+        hass = MagicMock()
+        hass.config_entries.async_update_entry.side_effect = _fake_update
+
+        with patch("custom_components.gatus.LOGGER") as mock_logger:
+            await async_migrate_entry(hass, mock_entry)
+
+        assert mock_logger.info.call_args.args[1:] == (
+            "http-gatus-example-com",
+            "http_gatus_example_com",
+        )
+
     async def test_unknown_version_returns_false(self) -> None:
         """Migration fails gracefully for unrecognised entry versions."""
         mock_entry = MagicMock()
@@ -198,3 +219,38 @@ class TestAsyncMigrateEntry:
 
         assert result is False
         hass.config_entries.async_update_entry.assert_not_called()
+
+
+class TestGatusFlowHandlerUserStep:
+    """Tests for GatusFlowHandler.async_step_user."""
+
+    async def _run(self, url: str) -> dict[str, MagicMock]:
+        flow = GatusFlowHandler()
+        mocks: dict[str, MagicMock] = {
+            "async_set_unique_id": AsyncMock(),
+            "_abort_if_unique_id_configured": MagicMock(),
+            "_test_credentials": AsyncMock(),
+            "async_create_entry": MagicMock(return_value={"type": "create_entry"}),
+            "async_show_form": MagicMock(return_value={"type": "form"}),
+        }
+        with patch.multiple(flow, **mocks):
+            await flow.async_step_user({CONF_URL: url})
+        return mocks
+
+    async def test_trailing_slash_is_normalised(self) -> None:
+        """A trailing slash does not produce a different unique_id or entry."""
+        mocks = await self._run(f"  {MOCK_URL}/ ")
+
+        mocks["async_set_unique_id"].assert_awaited_once_with("http_gatus_example_com")
+        mocks["async_create_entry"].assert_called_once_with(
+            title=MOCK_URL, data={CONF_URL: MOCK_URL}
+        )
+
+    async def test_url_without_scheme_is_rejected(self) -> None:
+        """URLs without http(s) scheme show the invalid_url error."""
+        mocks = await self._run("gatus.example.com")
+
+        mocks["async_create_entry"].assert_not_called()
+        assert mocks["async_show_form"].call_args.kwargs["errors"] == {
+            "base": "invalid_url"
+        }

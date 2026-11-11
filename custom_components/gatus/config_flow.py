@@ -42,7 +42,9 @@ class GatusFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
         """Handle a flow initialized by the user."""
         _errors = {}
         if user_input is not None:
-            url = user_input[CONF_URL].strip()
+            # Drop trailing slashes so "http://host" and "http://host/" map to
+            # the same unique_id and cannot be configured twice.
+            url = user_input[CONF_URL].strip().rstrip("/")
             if not url.startswith(("http://", "https://")):
                 _errors["base"] = "invalid_url"
             else:
