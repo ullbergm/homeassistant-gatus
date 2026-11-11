@@ -28,6 +28,9 @@ class GatusApiClientAuthenticationError(
 def _verify_response_or_raise(response: aiohttp.ClientResponse) -> None:
     """Verify that the response is valid."""
     if response.status in (401, 403):
+        # raise_for_status() releases the connection itself; do the same here
+        # so the auth path does not hold it until garbage collection.
+        response.release()
         msg = "Invalid credentials"
         raise GatusApiClientAuthenticationError(
             msg,
