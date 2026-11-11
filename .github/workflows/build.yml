@@ -85,7 +85,8 @@ jobs:
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v7.0.0
         with:
-          env_vars: OS,PYTHON
+          # Optional: uploads are tokenless unless this repository secret is set.
+          token: ${{ secrets.CODECOV_TOKEN }}
           verbose: true
 
   tests-min-ha:

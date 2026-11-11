@@ -32,6 +32,11 @@ repos:
     rev: v1.35.1
     hooks:
       - id: yamllint
+  # .yamllint skips .github/, so workflows are checked here instead.
+  - repo: https://github.com/rhysd/actionlint
+    rev: v1.7.12
+    hooks:
+      - id: actionlint
   - repo: local
     hooks:
       - id: pylint
