@@ -11,7 +11,7 @@ from datetime import timedelta
 from typing import TYPE_CHECKING
 
 from homeassistant.const import CONF_URL, Platform
-from homeassistant.helpers.aiohttp_client import async_create_clientsession
+from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.loader import async_get_loaded_integration
 from homeassistant.util import slugify
 
@@ -27,6 +27,7 @@ if TYPE_CHECKING:
 
 PLATFORMS: list[Platform] = [
     Platform.BINARY_SENSOR,
+    Platform.SENSOR,
 ]
 
 
@@ -40,14 +41,14 @@ async def async_setup_entry(
     coordinator = GatusDataUpdateCoordinator(
         hass=hass,
         logger=LOGGER,
+        config_entry=entry,
         name=DOMAIN,
         update_interval=timedelta(seconds=int(scan_interval)),
     )
-    session = async_create_clientsession(hass)
     entry.runtime_data = GatusData(
         client=GatusApiClient(
             url=entry.data[CONF_URL],
-            session=session,
+            session=async_get_clientsession(hass),
         ),
         integration=async_get_loaded_integration(hass, entry.domain),
         coordinator=coordinator,
@@ -97,6 +98,7 @@ async def async_migrate_entry(
 
     if entry.version == 1:
         url = entry.data.get(CONF_URL, "")
+        old_unique_id = entry.unique_id
         new_unique_id = slugify(url)
         hass.config_entries.async_update_entry(
             entry,
@@ -105,7 +107,7 @@ async def async_migrate_entry(
         )
         LOGGER.info(
             "Migrated Gatus config entry unique_id from %r to %r",
-            entry.unique_id,
+            old_unique_id,
             new_unique_id,
         )
         return True
